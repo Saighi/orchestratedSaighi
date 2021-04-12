@@ -1,0 +1,7 @@
+sim_rc_p10c_P_simple.cpp, sim_rc_p10c_P.cpp
+sont maintenant similaires, je les gardes pour des modification uterieures.
+
+sim_rc_p10c_P_simple_working.cpp n'a pas de plasticité entre Ext et Ex
+
+L'étude de sim_rc_p10c_P_simple_working.cpp ce fait avec une connectivité interne de 0.05
+comme dicté dans run_P_compare_brian.sh

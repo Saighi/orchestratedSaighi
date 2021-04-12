@@ -1,0 +1,42 @@
+[
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi",
+            "-I/usr/lib/x86_64-linux-gnu/openmpi/include",
+            "-pthread",
+            "-ansi",
+            "-pipe",
+            "-O3",
+            "-march=native",
+            "-ffast-math",
+            "-pedantic",
+            "-I/usr/include",
+            "-I/users/nsr/saighi/auryn/src",
+            "sim_one.cpp"
+        ],
+        "directory": "/export/home1/users/nsr/saighi/pub2015orchestrated/src",
+        "file": "sim_one.cpp"
+    },
+    {
+        "arguments": [
+            "/usr/bin/g++",
+            "-c",
+            "-ansi",
+            "-pipe",
+            "-O3",
+            "-march=native",
+            "-ffast-math",
+            "-pedantic",
+            "-I/usr/include",
+            "-I/users/nsr/saighi/auryn/src",
+            "-I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi",
+            "-I/usr/lib/x86_64-linux-gnu/openmpi/include",
+            "-pthread",
+            "sim_one.cpp"
+        ],
+        "directory": "/export/home1/users/nsr/saighi/pub2015orchestrated/src",
+        "file": "sim_one.cpp"
+    }
+]
