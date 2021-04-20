@@ -1,9 +1,9 @@
 #!/bin/sh
 . ./globalvars.sh
 
-TIME=450
+TIME=100
 BG=10
-OUTDIR="$HOME/data/sim_network/sim_10Hz_simple_se0.3"
+OUTDIR="$HOME/data/sim_network/sim_10Hz_simple_se0.2"
 
 mkdir -p $OUTDIR
 
@@ -15,7 +15,7 @@ mkdir -p $OUTDIR
 make -C $DIR -j8 sim_rc_p10c_P_simple && mpirun -n $NP $DIR/sim_rc_p10c_P_simple \
 	--dir $OUTDIR \
 	--prefix rf1 --size 4096 --save \
-	--wie 0.2 --wee 0.1 --wext 0.3 \
+	--wie 0.2 --wee 0.1 --wext 0.2 \
 	--simtime $TIME --tauf $TAUF --taud $TAUD \
 	--intsparse $INTSPARSENESS \
 	--extsparse 0.05 \

@@ -1,0 +1,7 @@
+%%MatrixMarket matrix coordinate real general
+% Auryn weight matrix. Has to be kept in row major order for load operation.
+% Connection name: Stim->E
+% Locked range: 1
+%
+1 1 1
+1 1 3.9942062e-04

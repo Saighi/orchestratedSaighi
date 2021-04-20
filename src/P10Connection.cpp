@@ -21,6 +21,7 @@
 #include "P10Connection.h"
 
 using namespace auryn;
+using namespace std;
 
 void P10Connection::init(AurynFloat eta, AurynFloat kappa, AurynFloat maxweight)
 {
@@ -302,7 +303,7 @@ void P10Connection::push_attributes()
 		src->push_attribute( valueToSend ); 
 
 		// cout.precision(5);
-		// cout << x << " " << u << " " << valueToSend << endl;
+		// cout << " " << x << " " << u << " " << valueToSend << endl;
 
 	}
 }
