@@ -113,7 +113,7 @@ def SpikesDistFromPat(spikeTrain, duree_pattern, signal_times, window=0.5):
 
     return times, dists
 
-def SpikesDistNeurones(spikeTrainN, duree_pattern, signal_times, window=0.5, nb_neuron = 4096):
+def SpikesDistNeurones(spikeTrainN, duree_pattern, signal_times, window=0.5,offset=0, nb_neuron = 4096):
     
     spikeTrain = spikeTrainN[:,0]
     neurones = spikeTrainN[:,1]
@@ -124,9 +124,9 @@ def SpikesDistNeurones(spikeTrainN, duree_pattern, signal_times, window=0.5, nb_
 
     for event in signal_times:
         for spike_i in range(r, len(spikeTrain)):
-            if spikeTrain[spike_i] > event+window/2:
+            if spikeTrain[spike_i] > (event+window/2)+offset:
                 break
-            if spikeTrain[spike_i] < event-window/2:
+            if spikeTrain[spike_i] < (event-window/2)+offset:
                 r += 1
             else:
                 listdistN[int(neurones[spike_i])].append((spikeTrain[spike_i]-event,spikeTrain[spike_i]))

@@ -1,0 +1,108 @@
+<html>
+<head>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.css" type="text/css" />
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis-network.min.js"> </script>
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+
+<style type="text/css">
+
+        #mynetwork {
+            width: 500px;
+            height: 500px;
+            background-color: #ffffff;
+            border: 1px solid lightgray;
+            position: relative;
+            float: left;
+        }
+
+        
+
+        
+
+        
+</style>
+
+</head>
+
+<body>
+<div id = "mynetwork"></div>
+
+
+<script type="text/javascript">
+
+    // initialize global variables.
+    var edges;
+    var nodes;
+    var network; 
+    var container;
+    var options, data;
+
+    
+    // This method is responsible for drawing the graph, returns the drawn network
+    function drawGraph() {
+        var container = document.getElementById('mynetwork');
+        
+        
+
+        // parsing and collecting nodes and edges from the python
+        nodes = new vis.DataSet([{"id": 1262, "label": 1262, "shape": "dot"}, {"id": 2768, "label": 2768, "shape": "dot"}, {"id": 3808, "label": 3808, "shape": "dot"}, {"id": 2734, "label": 2734, "shape": "dot"}, {"id": 441, "label": 441, "shape": "dot"}, {"id": 3083, "label": 3083, "shape": "dot"}, {"id": 1208, "label": 1208, "shape": "dot"}, {"id": 2960, "label": 2960, "shape": "dot"}, {"id": 2695, "label": 2695, "shape": "dot"}, {"id": 2759, "label": 2759, "shape": "dot"}, {"id": 3318, "label": 3318, "shape": "dot"}, {"id": 442, "label": 442, "shape": "dot"}, {"id": 1543, "label": 1543, "shape": "dot"}, {"id": 1425, "label": 1425, "shape": "dot"}, {"id": 3225, "label": 3225, "shape": "dot"}, {"id": 2236, "label": 2236, "shape": "dot"}, {"id": 3349, "label": 3349, "shape": "dot"}, {"id": 2506, "label": 2506, "shape": "dot"}, {"id": 1802, "label": 1802, "shape": "dot"}, {"id": 3848, "label": 3848, "shape": "dot"}, {"id": 3568, "label": 3568, "shape": "dot"}, {"id": 1203, "label": 1203, "shape": "dot"}, {"id": 2144, "label": 2144, "shape": "dot"}, {"id": 1690, "label": 1690, "shape": "dot"}, {"id": 176, "label": 176, "shape": "dot"}, {"id": 2349, "label": 2349, "shape": "dot"}, {"id": 2479, "label": 2479, "shape": "dot"}, {"id": 1008, "label": 1008, "shape": "dot"}, {"id": 3993, "label": 3993, "shape": "dot"}, {"id": 3902, "label": 3902, "shape": "dot"}, {"id": 3720, "label": 3720, "shape": "dot"}, {"id": 854, "label": 854, "shape": "dot"}, {"id": 960, "label": 960, "shape": "dot"}, {"id": 2352, "label": 2352, "shape": "dot"}, {"id": 3176, "label": 3176, "shape": "dot"}, {"id": 3217, "label": 3217, "shape": "dot"}, {"id": 3739, "label": 3739, "shape": "dot"}, {"id": 1809, "label": 1809, "shape": "dot"}, {"id": 268, "label": 268, "shape": "dot"}, {"id": 2774, "label": 2774, "shape": "dot"}, {"id": 2255, "label": 2255, "shape": "dot"}, {"id": 3281, "label": 3281, "shape": "dot"}, {"id": 277, "label": 277, "shape": "dot"}, {"id": 43, "label": 43, "shape": "dot"}, {"id": 3894, "label": 3894, "shape": "dot"}, {"id": 3214, "label": 3214, "shape": "dot"}, {"id": 610, "label": 610, "shape": "dot"}, {"id": 672, "label": 672, "shape": "dot"}, {"id": 2576, "label": 2576, "shape": "dot"}, {"id": 2388, "label": 2388, "shape": "dot"}, {"id": 266, "label": 266, "shape": "dot"}, {"id": 2555, "label": 2555, "shape": "dot"}, {"id": 3389, "label": 3389, "shape": "dot"}, {"id": 1968, "label": 1968, "shape": "dot"}, {"id": 4070, "label": 4070, "shape": "dot"}, {"id": 2661, "label": 2661, "shape": "dot"}, {"id": 1429, "label": 1429, "shape": "dot"}, {"id": 1260, "label": 1260, "shape": "dot"}, {"id": 4028, "label": 4028, "shape": "dot"}, {"id": 3630, "label": 3630, "shape": "dot"}, {"id": 2805, "label": 2805, "shape": "dot"}, {"id": 1712, "label": 1712, "shape": "dot"}, {"id": 3334, "label": 3334, "shape": "dot"}, {"id": 1583, "label": 1583, "shape": "dot"}, {"id": 1364, "label": 1364, "shape": "dot"}, {"id": 911, "label": 911, "shape": "dot"}, {"id": 1828, "label": 1828, "shape": "dot"}, {"id": 3876, "label": 3876, "shape": "dot"}, {"id": 2795, "label": 2795, "shape": "dot"}, {"id": 2438, "label": 2438, "shape": "dot"}, {"id": 125, "label": 125, "shape": "dot"}, {"id": 698, "label": 698, "shape": "dot"}, {"id": 732, "label": 732, "shape": "dot"}, {"id": 2430, "label": 2430, "shape": "dot"}, {"id": 1027, "label": 1027, "shape": "dot"}, {"id": 2518, "label": 2518, "shape": "dot"}, {"id": 2785, "label": 2785, "shape": "dot"}, {"id": 132, "label": 132, "shape": "dot"}, {"id": 3404, "label": 3404, "shape": "dot"}, {"id": 2121, "label": 2121, "shape": "dot"}, {"id": 997, "label": 997, "shape": "dot"}]);
+        edges = new vis.DataSet([{"from": 2768, "to": 2479, "weight": 0.64794713}, {"from": 2768, "to": 3894, "weight": 0.63662606}, {"from": 2768, "to": 2555, "weight": 1.2208092}, {"from": 2768, "to": 698, "weight": 0.48897454}, {"from": 2768, "to": 3404, "weight": 0.54375458}, {"from": 441, "to": 1208, "weight": 0.36835054}, {"from": 441, "to": 2479, "weight": 0.56493807}, {"from": 441, "to": 3902, "weight": 1.2511616}, {"from": 441, "to": 854, "weight": 1.2120744}, {"from": 441, "to": 3739, "weight": 0.62538809}, {"from": 441, "to": 672, "weight": 0.27444783}, {"from": 441, "to": 4070, "weight": 0.4273591}, {"from": 441, "to": 125, "weight": 1.2118707}, {"from": 2960, "to": 1208, "weight": 0.66980851}, {"from": 2960, "to": 2144, "weight": 0.4958356}, {"from": 2960, "to": 854, "weight": 1.2083724}, {"from": 2960, "to": 3217, "weight": 0.41609168}, {"from": 2960, "to": 277, "weight": 0.57252419}, {"from": 2960, "to": 1027, "weight": 0.59304458}, {"from": 2695, "to": 3349, "weight": 0.17108145}, {"from": 2695, "to": 3568, "weight": 0.13207096}, {"from": 2695, "to": 2805, "weight": 0.25326538}, {"from": 3318, "to": 1690, "weight": 0.20180555}, {"from": 3318, "to": 1809, "weight": 0.67982054}, {"from": 3318, "to": 2774, "weight": 0.54157728}, {"from": 3318, "to": 1712, "weight": 0.15155503}, {"from": 3318, "to": 911, "weight": 0.73507321}, {"from": 442, "to": 2144, "weight": 0.59608251}, {"from": 442, "to": 3993, "weight": 0.4413721}, {"from": 442, "to": 2430, "weight": 0.4309977}, {"from": 442, "to": 3404, "weight": 0.53699988}, {"from": 1425, "to": 1543, "weight": 1.2182389}, {"from": 1425, "to": 3349, "weight": 0.54631549}, {"from": 1425, "to": 3568, "weight": 0.51132834}, {"from": 1425, "to": 3334, "weight": 0.24642439}, {"from": 3225, "to": 3568, "weight": 0.61621588}, {"from": 2236, "to": 3404, "weight": 0.14794318}, {"from": 2506, "to": 3349, "weight": 0.36367461}, {"from": 2506, "to": 3334, "weight": 0.43939632}, {"from": 3848, "to": 3808, "weight": 0.54011434}, {"from": 3848, "to": 3083, "weight": 0.64668959}, {"from": 3848, "to": 2695, "weight": 1.600739}, {"from": 3848, "to": 2759, "weight": 0.59501755}, {"from": 3848, "to": 3225, "weight": 2.5592542}, {"from": 3848, "to": 3876, "weight": 0.63511866}, {"from": 3568, "to": 3739, "weight": 0.14415671}, {"from": 1690, "to": 2506, "weight": 0.77853215}, {"from": 1690, "to": 2352, "weight": 0.09404926}, {"from": 176, "to": 3176, "weight": 0.097948819}, {"from": 2349, "to": 2236, "weight": 0.13980864}, {"from": 1008, "to": 3217, "weight": 0.13211188}, {"from": 1008, "to": 1027, "weight": 0.39928317}, {"from": 3993, "to": 2236, "weight": 0.57704413}, {"from": 3993, "to": 3349, "weight": 0.6462211}, {"from": 3993, "to": 2255, "weight": 1.2696452}, {"from": 3993, "to": 3876, "weight": 0.31487507}, {"from": 3902, "to": 1543, "weight": 0.70049375}, {"from": 3902, "to": 2144, "weight": 0.35403934}, {"from": 854, "to": 4028, "weight": 0.32161093}, {"from": 268, "to": 3739, "weight": 0.34595311}, {"from": 268, "to": 1583, "weight": 0.1676873}, {"from": 268, "to": 2785, "weight": 0.37156218}, {"from": 2774, "to": 672, "weight": 0.15685026}, {"from": 2255, "to": 2759, "weight": 0.22559717}, {"from": 277, "to": 1208, "weight": 0.34191102}, {"from": 277, "to": 1203, "weight": 1.2464147}, {"from": 277, "to": 1712, "weight": 0.4449037}, {"from": 277, "to": 3404, "weight": 0.27645567}, {"from": 277, "to": 997, "weight": 0.60473663}, {"from": 43, "to": 3568, "weight": 0.4358483}, {"from": 43, "to": 911, "weight": 0.4491232}, {"from": 43, "to": 997, "weight": 0.42621788}, {"from": 3894, "to": 3568, "weight": 0.32565698}, {"from": 3214, "to": 3720, "weight": 0.81882793}, {"from": 3214, "to": 698, "weight": 0.82949555}, {"from": 610, "to": 176, "weight": 0.09660197}, {"from": 672, "to": 1262, "weight": 0.18269227}, {"from": 672, "to": 1809, "weight": 0.45240015}, {"from": 2576, "to": 2695, "weight": 0.64527196}, {"from": 2576, "to": 1690, "weight": 0.76320344}, {"from": 2576, "to": 698, "weight": 0.32067209}, {"from": 2576, "to": 2121, "weight": 0.69024742}, {"from": 2388, "to": 1809, "weight": 0.63205409}, {"from": 2388, "to": 1712, "weight": 0.67842942}, {"from": 2388, "to": 132, "weight": 0.3536312}, {"from": 266, "to": 3349, "weight": 0.34451795}, {"from": 266, "to": 1809, "weight": 0.20850241}, {"from": 266, "to": 698, "weight": 0.8305971}, {"from": 2555, "to": 1690, "weight": 0.4008148}, {"from": 1968, "to": 3083, "weight": 0.13363966}, {"from": 1968, "to": 1809, "weight": 0.55309677}, {"from": 1968, "to": 3404, "weight": 0.10731779}, {"from": 2661, "to": 1262, "weight": 0.36689121}, {"from": 2661, "to": 2352, "weight": 0.13544838}, {"from": 2661, "to": 3739, "weight": 0.27871707}, {"from": 2661, "to": 610, "weight": 0.26577604}, {"from": 2661, "to": 1712, "weight": 0.34979898}, {"from": 2661, "to": 3876, "weight": 0.20479418}, {"from": 2661, "to": 2785, "weight": 0.5093534}, {"from": 2661, "to": 2121, "weight": 0.33816823}, {"from": 1429, "to": 1203, "weight": 1.1023724}, {"from": 1260, "to": 3389, "weight": 0.65065485}, {"from": 3630, "to": 1809, "weight": 0.49864018}, {"from": 3334, "to": 2555, "weight": 1.7203288}, {"from": 1583, "to": 3389, "weight": 0.16396375}, {"from": 1364, "to": 2759, "weight": 0.61289769}, {"from": 1364, "to": 1809, "weight": 0.62119645}, {"from": 911, "to": 3349, "weight": 0.43207133}, {"from": 1828, "to": 3349, "weight": 0.43865761}, {"from": 1828, "to": 2121, "weight": 0.24790065}, {"from": 3876, "to": 2144, "weight": 0.20349677}, {"from": 3876, "to": 2352, "weight": 0.14364687}, {"from": 732, "to": 3217, "weight": 0.22099935}, {"from": 732, "to": 2555, "weight": 1.6712238}, {"from": 2518, "to": 2144, "weight": 0.36223999}, {"from": 2518, "to": 911, "weight": 0.11821239}, {"from": 132, "to": 1809, "weight": 0.39860472}, {"from": 132, "to": 3334, "weight": 0.10579003}, {"from": 997, "to": 672, "weight": 0.20517462}]);
+
+        // adding nodes and edges to the graph
+        data = {nodes: nodes, edges: edges};
+
+        var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": false,
+            "type": "continuous"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+        
+        
+
+        
+
+        network = new vis.Network(container, data, options);
+	 
+        
+
+
+        
+
+        return network;
+
+    }
+
+    drawGraph();
+
+</script>
+</body>
+</html>
