@@ -1,9 +1,9 @@
 #!/bin/sh
 . ./globalvars.sh
 
-TIME=100
+TIME=1800
 BG=10
-OUTDIR="$HOME/data/sim_network/sim_10Hz_simple_se0.2"
+OUTDIR="$HOME/data/sim_network/sim_stady_state_brian"
 
 mkdir -p $OUTDIR
 

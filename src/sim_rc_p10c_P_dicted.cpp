@@ -54,6 +54,7 @@ int main(int ac, char* av[])
 
 	NeuronID stimsize = 4096;
 	NeuronID size = 4096;
+	NeuronID size_ext = 4096;
 	NeuronID seed = 1;
 	double alpha = 3;
 	double kappa = 10;
@@ -83,12 +84,13 @@ int main(int ac, char* av[])
 
 	double bgrate = 10.0;
 	int nb_pattern = 1;
+	int nb_segment = 1;
 
 	int preferred = -1;
 
-  string spiketrains = "";
-  string stimfile = ""; // stimulus patterns file
-  string prefile = ""; // preload patters file
+	string spiketrains = "";
+	string stimfile = ""; // stimulus patterns file
+	string prefile = ""; // preload patters file
 	string recfile = ""; // file with receptive fields
 	string monfile = ""; // patternsto monitor file
 	string patternFile = "/users/nsr/saighi/pub2015orchestrated/src/data/30hzTimePat"; // patternsto monitor file
@@ -160,9 +162,9 @@ int main(int ac, char* av[])
             ("preferred", po::value<int>(), "num of preferred stim")
             ("patternFile", po::value<int>(), "repeated pattern")
             ("monfile", po::value<string>(), "monitor file")
-			      ("nb_pattern", po::value<int>(), "number of different patterns presented")
+			("nb_segment", po::value<int>(), "number of different segment presented")
             ("input_spiketrains", po::value<string>(), "input spiketrains")
-
+			("size_ext", po::value<int>(), "size of stimulation")
         ;
 
         po::variables_map vm;
@@ -172,8 +174,8 @@ int main(int ac, char* av[])
         if(vm.count("input_spiketrains")){
           spiketrains = vm["input_spiketrains"].as<string>();
         }
-        if (vm.count("nb_pattern")) {
-          nb_pattern = vm["nb_pattern"].as<int>();
+        if (vm.count("nb_segment")) {
+          nb_segment = vm["nb_segment"].as<int>();
         }
 
         if (vm.count("nopattern")) {
@@ -322,6 +324,10 @@ int main(int ac, char* av[])
 
         if (vm.count("size")) {
 			size = vm["size"].as<int>();
+        }
+
+		if (vm.count("size_ext")) {
+			size_ext = vm["size_ext"].as<int>();
         } 
 
         if (vm.count("stimfile")) {
@@ -405,13 +411,14 @@ int main(int ac, char* av[])
 	neurons_e->set_tau_nmda(100e-3);
 	neurons_e->set_ampa_nmda_ratio(0.2);
 
+
 	IFGroup * neurons_i2 = new IFGroup(size/4);
 	neurons_i2->set_tau_ampa(5e-3);
 	neurons_i2->set_tau_gaba(10e-3);
 	neurons_i2->set_tau_nmda(100e-3);
 	neurons_i2->set_ampa_nmda_ratio(0.3);
-
-  FileInputGroup *stimgroup = new FileInputGroup(size,spiketrains);
+	sprintf(strbuf, "%s/%s", dir.c_str(),spiketrains.c_str());
+    FilesInputGroup *stimgroup = new FilesInputGroup(size_ext,string(strbuf),nb_segment);
 
 	double raw_delta = delta * eta / 1e-3;
 
@@ -422,6 +429,7 @@ int main(int ac, char* av[])
 			kappa,
 			wmax
 			);
+
 
 
 
@@ -447,7 +455,7 @@ int main(int ac, char* av[])
 	con_ee->delta = raw_delta*eta;
 	con_ee->set_min_weight(wmin);
 
-	STPConnection * con_ei2 = new STPConnection(neurons_e,neurons_i2,3*wei,sparseness,GLUT);
+	STPConnection * con_ei2 = new STPConnection(neurons_e,neurons_i2,wei,sparseness,GLUT);
 	con_ei2->set_tau_d(taud);
 	con_ei2->set_tau_f(0.6);
 	con_ei2->set_ujump(0.2);
@@ -470,19 +478,6 @@ int main(int ac, char* av[])
 			);
 	con_i2e->set_name("I2E");
 
-	if ( inh_input ) {
-		STPConnection * con_stim_i
-			= new STPConnection( stimgroup,
-					neurons_i2,
-					wext,
-					sparseness_ext,
-					GLUT);
-		con_stim_i->set_tau_d(taud);
-		con_stim_i->set_tau_f(0.6);
-		con_stim_i->set_ujump(0.2);
-		// con_stim_i->set_urest(0.2);
-	}
-
 	// External input
 	P10Connection * con_stim_e = NULL;
 	con_stim_e = new P10Connection( stimgroup, neurons_e,
@@ -503,26 +498,23 @@ int main(int ac, char* av[])
 	con_stim_e->set_beta(beta);
 	con_stim_e->delta = raw_delta*eta;
 	con_stim_e->set_min_weight(wmin);
-	// con_stim_e->random_data(wext,wext);
-	if ( noisy_initial_weights )
-		con_stim_e->random_data(wext,wext);
-
 	con_stim_e->set_name("Stim->E");
 	con_stim_e->consolidation_active = consolidation;
 	con_stim_e->pot_strength = pot_strength/normalization_factor;
 
-	if ( consolidate_initial_weights )
-		con_stim_e->consolidate();
-
-	sprintf(strbuf, "%s/%s.%d.sse", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
-	WeightMonitor * wmon_s = new WeightMonitor( con_stim_e, string(strbuf), 1.0 );
-	wmon_s->add_equally_spaced(50);
-
 	sprintf(strbuf, "%s/%s.%d.see", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
-	WeightMonitor * wmon = new WeightMonitor( con_ee, string(strbuf), 1.0);
-	wmon->add_equally_spaced(50);
+	WeightMonitor * wmon = new WeightMonitor( con_ee, string(strbuf), 10.0);
+	wmon->add_equally_spaced(1000);
 
-	sprintf(strbuf, "%s/%s.%d.mem", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
+	sprintf(strbuf, "%s/%s.%d.sse", dir.c_str(), file_prefix.c_str(),sys->mpi_rank());
+	WeightMonitor *wmonext = new WeightMonitor(con_stim_e, string(strbuf), 10.0);
+	wmonext->add_equally_spaced(1000);
+
+	sprintf(strbuf, "%s/%s.%d.sie", dir.c_str(), file_prefix.c_str(),sys->mpi_rank());
+	WeightMonitor *wmoni = new WeightMonitor(con_i2e, string(strbuf), 10.0);
+	wmoni->add_equally_spaced(1000);
+
+  	sprintf(strbuf, "%s/%s.%d.mem", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
 	VoltageMonitor * stmon_mem = new VoltageMonitor( neurons_e, 3, string(strbuf) );
 	stmon_mem->record_for(10); // stops recording after 10s
 
@@ -530,40 +522,22 @@ int main(int ac, char* av[])
 	VoltageMonitor * stmon_imem = new VoltageMonitor( neurons_i2, 3, string(strbuf) );
 	stmon_imem->record_for(10); // stops recording after 10s
 
-
-	sprintf(strbuf, "%s/%s.%d.si2e", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
-	WeightMonitor * wmon_i2e = new WeightMonitor( con_i2e, string(strbuf) );
-	wmon_i2e->add_equally_spaced(50);
-
-
-	sprintf(strbuf, "%s/%s.%d.wee", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
-	new WeightStatsMonitor( con_ee, string(strbuf) );
-
-	sprintf(strbuf, "%s/%s.%d.wi2e", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
-	new WeightStatsMonitor( con_i2e, string(strbuf) );
-
-
 	sprintf(strbuf, "%s/%s.%d.e.spk", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
 	BinarySpikeMonitor * smon_e = new BinarySpikeMonitor( neurons_e, string(strbuf), size );
 
-  sprintf(strbuf, "%s/%s.%d.e.spk", dir.c_str(), file_prefix.c_str(),sys->mpi_rank());
-  SpikeMonitor *smon_e_2 = new SpikeMonitor(neurons_e, string(strbuf), size);
-
-  sprintf(strbuf, "%s/%s.%d.ext.spk", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
-	BinarySpikeMonitor * mon_ext = new BinarySpikeMonitor( stimgroup, string(strbuf), size );
 
 	sprintf(strbuf, "%s/%s.%d.i2.spk", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
 	BinarySpikeMonitor * smon_i2 = new BinarySpikeMonitor( neurons_i2, string(strbuf), size );
 
 	sprintf(strbuf, "%s/%s.%d.e.prate", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
-	PopulationRateMonitor * pmon_e = new PopulationRateMonitor( neurons_e, string(strbuf), 0.01 );
+	PopulationRateMonitor * pmon_e = new PopulationRateMonitor( neurons_e, string(strbuf), 0.1 );
 
-	sprintf(strbuf, "%s/%s.%d.s.prate", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
-	PopulationRateMonitor * pmon_s = new PopulationRateMonitor( stimgroup, string(strbuf), 0.01 );
+	//sprintf(strbuf, "%s/%s.%d.s.prate", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
+	//PopulationRateMonitor * pmon_s = new PopulationRateMonitor( stimgroup, string(strbuf), 0.001 );
 
 
 	sprintf(strbuf, "%s/%s.%d.i2.prate", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
-	PopulationRateMonitor * pmon_i2 = new PopulationRateMonitor( neurons_i2, string(strbuf), 0.01 );
+	PopulationRateMonitor * pmon_i2 = new PopulationRateMonitor( neurons_i2, string(strbuf), 0.1 );
 
 	RateChecker * chk = new RateChecker( neurons_e , -1 , 20. , 0.1);
 
@@ -598,11 +572,15 @@ int main(int ac, char* av[])
 		sys->save_network_state(file_prefix);
 	}
 
+
 	sprintf(strbuf, "%s/%s.%d.ee.wmat", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
 	con_ee->write_to_file(strbuf);
 
 	sprintf(strbuf, "%s/%s.%d.ext.wmat", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
 	con_stim_e->write_to_file(strbuf);
+
+	sprintf(strbuf, "%s/%s.%d.ie.wmat", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
+	con_i2e->write_to_file(strbuf);
 
 
 	if (errcode) auryn_abort(errcode);

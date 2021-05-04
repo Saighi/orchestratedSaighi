@@ -430,7 +430,7 @@ int main(int ac, char* av[])
 	con_ee->delta = raw_delta*eta;
 	con_ee->set_min_weight(wmin);
 	
-	STPConnection * con_ei2 = new STPConnection(neurons_e,neurons_i2,wei*3,sparseness,GLUT);
+	STPConnection * con_ei2 = new STPConnection(neurons_e,neurons_i2,wei,sparseness,GLUT);
 	con_ei2->set_tau_d(taud);
 	con_ei2->set_tau_f(0.6);
 	con_ei2->set_ujump(0.2);
@@ -485,14 +485,18 @@ int main(int ac, char* av[])
 	con_i2e->set_name("I2E");
 
 	sprintf(strbuf, "%s/%s.%d.see", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
-	WeightMonitor * wmon = new WeightMonitor( con_ee, string(strbuf), 1.0);
-	wmon->add_equally_spaced(5000);
+	WeightMonitor * wmon = new WeightMonitor( con_ee, string(strbuf), 10.0);
+	wmon->add_equally_spaced(1000);
 
-  sprintf(strbuf, "%s/%s.%d.sse", dir.c_str(), file_prefix.c_str(),sys->mpi_rank());
-  WeightMonitor *wmonext = new WeightMonitor(con_stim_e, string(strbuf), 1.0);
-  wmon->add_equally_spaced(5000);
+	sprintf(strbuf, "%s/%s.%d.sse", dir.c_str(), file_prefix.c_str(),sys->mpi_rank());
+	WeightMonitor *wmonext = new WeightMonitor(con_stim_e, string(strbuf), 10.0);
+	wmonext->add_equally_spaced(1000);
 
-  sprintf(strbuf, "%s/%s.%d.mem", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
+	sprintf(strbuf, "%s/%s.%d.sie", dir.c_str(), file_prefix.c_str(),sys->mpi_rank());
+	WeightMonitor *wmoni = new WeightMonitor(con_i2e, string(strbuf), 10.0);
+	wmoni->add_equally_spaced(1000);
+
+  	sprintf(strbuf, "%s/%s.%d.mem", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
 	VoltageMonitor * stmon_mem = new VoltageMonitor( neurons_e, 3, string(strbuf) );
 	stmon_mem->record_for(10); // stops recording after 10s
 
@@ -508,10 +512,10 @@ int main(int ac, char* av[])
 	BinarySpikeMonitor * smon_i2 = new BinarySpikeMonitor( neurons_i2, string(strbuf), size );
 
 	sprintf(strbuf, "%s/%s.%d.e.prate", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
-	PopulationRateMonitor * pmon_e = new PopulationRateMonitor( neurons_e, string(strbuf), 0.0001 );
+	PopulationRateMonitor * pmon_e = new PopulationRateMonitor( neurons_e, string(strbuf), 0.1 );
 
-	sprintf(strbuf, "%s/%s.%d.s.prate", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
-	PopulationRateMonitor * pmon_s = new PopulationRateMonitor( stimgroup, string(strbuf), 0.1 );
+	//sprintf(strbuf, "%s/%s.%d.s.prate", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
+	//PopulationRateMonitor * pmon_s = new PopulationRateMonitor( stimgroup, string(strbuf), 0.001 );
 
 
 	sprintf(strbuf, "%s/%s.%d.i2.prate", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
@@ -555,6 +559,9 @@ int main(int ac, char* av[])
 
 	sprintf(strbuf, "%s/%s.%d.ext.wmat", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
 	con_stim_e->write_to_file(strbuf);
+
+	sprintf(strbuf, "%s/%s.%d.ie.wmat", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
+	con_i2e->write_to_file(strbuf);
 
 
 	if (errcode) auryn_abort(errcode);

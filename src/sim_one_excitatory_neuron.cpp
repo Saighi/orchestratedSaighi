@@ -428,19 +428,18 @@ int main(int ac, char* av[])
 	if ( consolidate_initial_weights )
 		con_stim_e->consolidate();
 
-
 	sprintf(strbuf, "%s/%s.%d.sse", dir.c_str(), file_prefix.c_str(),sys->mpi_rank());
 	WeightMonitor *wmon = new WeightMonitor(con_stim_e,0,taille, string(strbuf), 0.0001,DATARANGE);
 
   	sprintf(strbuf, "%s/%s.%d.e.mem", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
-	VoltageMonitor * stmon_mem = new VoltageMonitor( neurons_e, 0, string(strbuf),0.0001 );
+	VoltageMonitor * stmon_mem = new VoltageMonitor( neurons_e, 0, string(strbuf), 0.0001 );
 	//stmon_mem->record_for(10); // stops recording after 10s
 
 	sprintf(strbuf, "%s/%s.%d.e.spk", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
-	BinarySpikeMonitor * smon_e = new BinarySpikeMonitor( neurons_e, string(strbuf) );
+	BinarySpikeMonitor * smon_e = new BinarySpikeMonitor( neurons_e, string(strbuf), 0.0001 );
 
 	sprintf(strbuf, "%s/%s.%d.ext.spk", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
-	BinarySpikeMonitor * smon_ext = new BinarySpikeMonitor( stimgroup, string(strbuf) );
+	BinarySpikeMonitor * smon_ext = new BinarySpikeMonitor( stimgroup, string(strbuf), 0.0001 );
 
 	sprintf(strbuf, "%s/%s.%d.e.g_nmda", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
     StateMonitor *nmdaMon = new StateMonitor(neurons_e, 0, "g_nmda", string(strbuf), 0.0001);
