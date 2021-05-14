@@ -148,7 +148,7 @@ public:
 	void set_hom_trace(AurynFloat freq);
 	void set_beta(AurynFloat b);
 	void set_tau_d(AurynFloat taud);
-  void set_tau_cons(AurynFloat taucons);
+    void set_tau_cons(AurynFloat taucons);
 	void set_tau_f(AurynFloat tauf);
 	void set_ujump(AurynFloat r);
 	void set_urest(AurynFloat r);

@@ -96,16 +96,16 @@ def SpikesDistFromPatOld(spikeTrain, duree_pattern, delay):
 """ spikeTrains and signal_times need to be ordered """
 
 
-def SpikesDistFromPat(spikeTrain, duree_pattern, signal_times, window=0.5):
+def SpikesDistFromPat(spikeTrain, duree_pattern, signal_times, window=0.5,offset=0):
     times = []
     dists = []
     r = 0
 
     for event in signal_times:
         for spike_i in range(r, len(spikeTrain)):
-            if spikeTrain[spike_i] > event+window/2:
+            if spikeTrain[spike_i] > (event+window/2)+offset:
                 break
-            if spikeTrain[spike_i] < event-window/2:
+            if spikeTrain[spike_i] <  (event-window/2)+offset:
                 r += 1
             else:
                 dists.append(spikeTrain[spike_i]-event)

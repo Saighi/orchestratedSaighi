@@ -54,6 +54,7 @@ int main(int ac, char* av[])
 
 	NeuronID stimsize = 4096;
 	NeuronID size = 4096;
+	NeuronID size_ext = 4096;
 	NeuronID seed = 1;
 	double alpha = 3;
 	double kappa = 10;
@@ -163,7 +164,7 @@ int main(int ac, char* av[])
             ("monfile", po::value<string>(), "monitor file")
 			("nb_segment", po::value<int>(), "number of different segment presented")
             ("input_spiketrains", po::value<string>(), "input spiketrains")
-
+			("size_ext", po::value<int>(), "size of stimulation")
         ;
 
         po::variables_map vm;
@@ -325,6 +326,10 @@ int main(int ac, char* av[])
 			size = vm["size"].as<int>();
         } 
 
+		if (vm.count("size_ext")) {
+			size_ext = vm["size_ext"].as<int>();
+        } 
+
         if (vm.count("stimfile")) {
 			stimfile = vm["stimfile"].as<string>();
 			monfile = stimfile;
@@ -413,7 +418,7 @@ int main(int ac, char* av[])
 	neurons_i2->set_tau_nmda(100e-3);
 	neurons_i2->set_ampa_nmda_ratio(0.3);
 	sprintf(strbuf, "%s/%s", dir.c_str(),spiketrains.c_str());
-    FilesInputGroup *stimgroup = new FilesInputGroup(size,string(strbuf),nb_segment);
+    FilesInputGroup *stimgroup = new FilesInputGroup(size_ext,string(strbuf),nb_segment);
 
 	double raw_delta = delta * eta / 1e-3;
 

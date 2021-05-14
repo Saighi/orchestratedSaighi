@@ -20,7 +20,7 @@ import plotly.graph_objects as go
 
 # %%
 num_mpi_ranks = 4 # the number of sims you used in parallel
-datadir = os.path.expanduser("/mnt/data1/data_paul/sim_less_stim_neurons_more_inside_connect_nocons") # Set this to your data path
+datadir = os.path.expanduser("/mnt/data1/data_paul/sim_less_stim_neurons_nocons_suite_6h_pat_ref") # Set this to your data path
 prefix = "rf1"
 
 #%%
@@ -174,16 +174,22 @@ for t in range(int(total_time/numberof),total_time,int(total_time/numberof)):
 # %%
 NE = 4096
 time_start = 21700
-trange = 10
+trange = 20
 times, cells = np.array(sfo.get_spikes(t_start=time_start,t_stop=time_start+trange)).T
 freqs = []
 cvs = []
+nb_spike=[]
 for i in range(NE):
-    isi = np.diff(times[cells==i])
+    tms = times[cells==i]
+    nb_spike.append(len(tms))
+    isi = np.diff(tms)
     isim = isi.mean()
     freqs.append(1/isim)
     cvs.append(isi.std()/isim)
-
+freqs=np.array(freqs)
+nb_spike = np.array(nb_spike)
+#%%
+len(set(cells))
 # %%
 winner = np.where(np.array(freqs)>12)[0]
 # %%

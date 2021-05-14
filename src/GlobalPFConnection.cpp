@@ -222,3 +222,10 @@ bool GlobalPFConnection::load_from_file(string filename)
 	return SparseConnection::load_from_file(filename);
 }
 
+// bool GlobalPFConnection::load_from_complete_file(string filename)
+// {
+
+// 	return SparseConnection::load_from_complete_file(filename);
+// }
+
+

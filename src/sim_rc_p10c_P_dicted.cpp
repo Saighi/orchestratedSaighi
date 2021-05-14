@@ -572,7 +572,6 @@ int main(int ac, char* av[])
 		sys->save_network_state(file_prefix);
 	}
 
-
 	sprintf(strbuf, "%s/%s.%d.ee.wmat", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
 	con_ee->write_to_file(strbuf);
 

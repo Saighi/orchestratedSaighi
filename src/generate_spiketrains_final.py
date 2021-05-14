@@ -21,7 +21,7 @@ def outside_pattern(spiketrain,new_spiketrain,pattern_times):
         if spiketrain[i]>pattern_times[actual_pattern]+pattern_size:
             new_spiketrain[actual_spike] = spiketrain[i]
             actual_spike+=1
-    return actual_pattern,actual_spike
+    return actual_spike
 
 @numba.jit(nopython=True)
 def pattern_placement(actual_spike,pattern_times,new_spiketrain,nb_pattern,all_motifs,motifs_sizes,n,choices_patterns):
@@ -172,7 +172,7 @@ for s in range(nb_segment):
                     all_motifs[n,i,:len(motif)] = motif
 
             start_timer = timer()
-            actual_pattern , actual_spike = outside_pattern(spiketrain,new_spiketrain,pattern_times)
+            actual_spike = outside_pattern(spiketrain,new_spiketrain,pattern_times)
             end = timer()
             mesure_time_1 += end-start_timer
 

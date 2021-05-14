@@ -22,7 +22,7 @@ time_step =0.0001
 
 # %%
 num_mpi_ranks = 4 # the number of sims you used in parallel
-datadir = os.path.expanduser("~/data/sim_network/sim_dicted_npat_1000s") # Set this to your data path
+datadir = os.path.expanduser("/mnt/data1/data_paul/sim_less_stim_neurons_structured") # Set this to your data path
 prefix = "rf1"
 
 #%%
@@ -52,11 +52,11 @@ sie  = np.concatenate([pd.read_csv("%s/%s.%i.sie"%(datadir,prefix,i),delimiter='
 sse  = np.concatenate([pd.read_csv("%s/%s.%i.sse"%(datadir,prefix,i),delimiter=' ' ).values[:,1:-1] for i in range(3)],axis=1)
 
 # %%
-win = signal.windows.hann(100)
+win = signal.windows.hann(10)
 plt.plot(time_axis,np.convolve(rateE,win,'same')/ sum(win),label = "Auryn",alpha = 0.75)
 plt.legend()
 # %%
-win = signal.windows.hann(100)
+win = signal.windows.hann(10)
 plt.plot(time_axis_I,np.convolve(rateI,win,'same')/ sum(win),alpha = 0.75)
 #fig = go.Figure(data=go.Scatter( y=rateI[6000000:]))
 #fig.add_trace(go.Scatter( y=excitatory["gampa"][0]))
