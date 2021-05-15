@@ -1,7 +1,5 @@
 #%%
 import numpy as np
-from itertools import accumulate
-from neo.core import AnalogSignal
 import quantities as pq
 import matplotlib.pyplot as plt
 from sys import argv
@@ -23,27 +21,29 @@ def outside_pattern(spiketrain,new_spiketrain,pattern_times):
             if spiketrain[i]>pattern_times[actual_pattern+1]:
                 actual_pattern+=1
         if spiketrain[i]>pattern_times[actual_pattern]+time_pattern:
-            new_spiketrain[actual_spike] = spiketrain[i]
+            new_spiketrain[actual_spike,0] = spiketrain[i]
+            new_spiketrain[actual_spike,1] = 0
             actual_spike+=1
 
     return actual_spike
 
 
 @numba.jit(nopython=True)
-def pattern_placement(actual_spike,pattern_times,new_spiketrain,nb_pattern,all_motifs,motifs_sizes,n,choices_patterns):
+def pattern_placement(actual_spike,pattern_times,new_spiketrain,motifs_sizes,n,choices_patterns):
     total_size = actual_spike
     
     for i in range(len(pattern_times)):
         which_pattern_kind = choices_patterns[i]
         which_pattern_pool = choices_pool[i]
         motif = all_pattern_pools[n,which_pattern_kind,which_pattern_pool,:pattern_pools_sizes[n,which_pattern_kind,which_pattern_pool]]
-        new_spiketrain[total_size:total_size + len(motif)] =motif+pattern_times[i]
+        new_spiketrain[total_size:total_size + len(motif),0] =motif+pattern_times[i]
+        new_spiketrain[total_size:total_size + len(motif),1] = np.ones(len(motif))
         total_size += len(motif)
 
     return total_size
 
 @numba.jit(nopython=True)
-def pattern_placement_oscillation(actual_spike,pattern_times,new_spiketrain,nb_pattern,all_motifs,motifs_sizes,n,choices_patterns):
+def pattern_placement_oscillation(actual_spike,pattern_times,new_spiketrain,motifs_sizes,n,choices_patterns):
     total_size = actual_spike
     
     for i in range(len(pattern_times)):
@@ -52,16 +52,24 @@ def pattern_placement_oscillation(actual_spike,pattern_times,new_spiketrain,nb_p
         phase = (pattern_times[i]%times_phase[-1])
         which_phase = np.abs(times_phase-phase).argmin()+1
         motif = all_pattern_pools[n,which_pattern_kind,which_phase,which_pattern_pool,:pattern_pools_sizes[n,which_pattern_kind,which_phase,which_pattern_pool]]
-        new_spiketrain[total_size:total_size + len(motif)] =motif+pattern_times[i]
+        new_spiketrain[total_size:total_size + len(motif),0] = motif+pattern_times[i]
+        new_spiketrain[total_size:total_size + len(motif),1] = np.ones(len(motif))
         total_size += len(motif)
 
     return total_size
 
+# @numba.jit(nopython=True)
+# def copy_data(datas,fill_until,total_size,new_spiketrain,n):
+#         datas[fill_until:fill_until+total_size,0] = new_spiketrain[:total_size]
+#         datas[fill_until:fill_until+total_size,1] = np.full(total_size,n)
+#         return fill_until+total_size
+
 @numba.jit(nopython=True)
 def copy_data(datas,fill_until,total_size,new_spiketrain,n):
-        datas[fill_until:fill_until+total_size,0] = new_spiketrain[:total_size]
-        datas[fill_until:fill_until+total_size,1] = np.full(total_size,n)
-        return fill_until+total_size
+    datas[fill_until:fill_until+total_size,0] = new_spiketrain[:total_size,0]
+    datas[fill_until:fill_until+total_size,1] = np.full(total_size,n)
+    datas[fill_until:fill_until+total_size,2] =  new_spiketrain[:total_size,1]
+    return fill_until+total_size
 
 def pattern_pool_oscillation(n,index_pat_kind):
     pattern_train = homogeneous_poisson_process((rate+var_rate)*pq.Hz,t_start=0*pq.s,t_stop=time_pattern*pq.s,as_array=True)
@@ -154,9 +162,9 @@ def simulate_pattern_neuron(n):
  
         actual_spike = outside_pattern(spiketrain,new_spiketrain,pattern_times)
         if not oscillation:
-            total_size = pattern_placement(actual_spike,pattern_times,new_spiketrain,nb_pattern,all_motifs,motifs_sizes,n,choices_patterns)
+            total_size = pattern_placement(actual_spike,pattern_times,new_spiketrain,motifs_sizes,n,choices_patterns)
         else :
-            total_size = pattern_placement_oscillation(actual_spike,pattern_times,new_spiketrain,nb_pattern,all_motifs,motifs_sizes,n,choices_patterns)
+            total_size = pattern_placement_oscillation(actual_spike,pattern_times,new_spiketrain,motifs_sizes,n,choices_patterns)
 
 
         return new_spiketrain[:total_size],n,total_size
@@ -206,10 +214,10 @@ oscillation = False
 frequency = 36
 time_sim = 1000
 sampling_rate = 11
-nb_neurons = 1024
+nb_neurons = 10
 nb_segment = 1
 outdir = "."
-pattern = False
+pattern = True
 
 if pattern :
     time_pattern = 0.1
@@ -245,7 +253,7 @@ if pattern:
     scaled_sin_signals_pattern = ((raw_sin_signals_pattern/2)*((var_rate)/rate))+(1-((var_rate)/rate)/2)
     sin_signals_pattern = dict(zip(times_phase,scaled_sin_signals_pattern))
 
-    new_spiketrain = np.empty( int(((rate*time_sim)/nb_segment)*10) ,dtype=np.float32) #change size for longer simulations
+    new_spiketrain = np.empty( (int(((rate*time_sim)/nb_segment)*10),2 ) ,dtype=np.float32) #change size for longer simulations
     all_motifs = np.empty((nb_neurons,nb_pattern,int(((rate*time_pattern))*20)))
     motifs_sizes = np.empty((nb_neurons,nb_pattern),dtype=int)
     concerned_neurons = set( np.random.choice(range(nb_neurons),int(nb_neurons*sparsity_pattern), replace = False))
@@ -263,7 +271,7 @@ if pattern:
 #res = pattern_pool(time_pattern,delta_pat,sin_signals_pattern,extanded_sample_pattern,1000)
 #plt.plot(np.array(oscillation_patterns).T)
 # %%
-datas = np.empty((int(((rate*time_sim*nb_neurons)/nb_segment)*2),2),dtype=np.float32)
+datas = np.empty((int(((rate*time_sim*nb_neurons)/nb_segment)*2),3),dtype=np.float32)
 time_seg =  (time_sim/nb_segment)*pq.s
 # %%
 for s in range(nb_segment):
@@ -287,7 +295,8 @@ for s in range(nb_segment):
         
         for res in multiple_thread:
             final_spike_train,n,total_size=res.get()
-                            print(n)
+            final_spike_train_color = np.array([final_spike_train,np.zeros(len(final_spike_train))]).T
+            print(n)
             fill_until = copy_data(datas,fill_until,total_size,final_spike_train,n)
     
     if len(concerned_neurons)>0:
@@ -302,8 +311,8 @@ for s in range(nb_segment):
                 fill_until = copy_data(datas,fill_until,total_size,final_spike_train,n)
 
 
-
-
+# %%
+plt.scatter([1,2,3],[1,2,3])
 
 # %%
 # start_timer = timer()
