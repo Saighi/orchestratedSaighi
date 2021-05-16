@@ -1,4 +1,5 @@
 #%%
+from operator import mul
 import numpy as np
 import quantities as pq
 import matplotlib.pyplot as plt
@@ -6,7 +7,6 @@ from sys import argv
 from timeit import default_timer as timer
 from multiprocessing import Pool, TimeoutError
 import numba
-from scipy.signal.windows import gaussian
 from tick.hawkes import SimuInhomogeneousPoisson
 from tick.base import TimeFunction
 from elephant.spike_train_generation import homogeneous_poisson_process
@@ -29,30 +29,31 @@ def outside_pattern(spiketrain,new_spiketrain,pattern_times):
 
 
 @numba.jit(nopython=True)
-def pattern_placement(actual_spike,pattern_times,new_spiketrain,motifs_sizes,n,choices_patterns):
+def pattern_placement(neuron_pattern_pools,neuron_pattern_sizes,actual_spike,pattern_times,new_spiketrain,n,choices_patterns):
     total_size = actual_spike
-    
     for i in range(len(pattern_times)):
         which_pattern_kind = choices_patterns[i]
         which_pattern_pool = choices_pool[i]
-        motif = all_pattern_pools[n,which_pattern_kind,which_pattern_pool,:pattern_pools_sizes[n,which_pattern_kind,which_pattern_pool]]
-        new_spiketrain[total_size:total_size + len(motif),0] =motif+pattern_times[i]
+        motif = neuron_pattern_pools[which_pattern_kind,which_pattern_pool,:neuron_pattern_sizes[which_pattern_kind,which_pattern_pool]]
+        new_spiketrain[total_size:total_size + len(motif),0] = (motif+pattern_times[i])-time_pattern/2
         new_spiketrain[total_size:total_size + len(motif),1] = np.ones(len(motif))
         total_size += len(motif)
 
     return total_size
 
 @numba.jit(nopython=True)
-def pattern_placement_oscillation(actual_spike,pattern_times,new_spiketrain,motifs_sizes,n,choices_patterns):
+def pattern_placement_oscillation(neuron_pattern_pools,neuron_pattern_sizes,actual_spike,pattern_times,new_spiketrain,n,choices_patterns):
     total_size = actual_spike
     
     for i in range(len(pattern_times)):
+        
         which_pattern_kind = choices_patterns[i]
         which_pattern_pool = choices_pool[i]
-        phase = (pattern_times[i]%times_phase[-1])
+        rephased_time = (pattern_times[i]-(time_pattern/2))*(np.pi*2)
+        phase = (rephased_time%(2*np.pi))
         which_phase = np.abs(times_phase-phase).argmin()+1
-        motif = all_pattern_pools[n,which_pattern_kind,which_phase,which_pattern_pool,:pattern_pools_sizes[n,which_pattern_kind,which_phase,which_pattern_pool]]
-        new_spiketrain[total_size:total_size + len(motif),0] = motif+pattern_times[i]
+        motif = neuron_pattern_pools[which_pattern_kind,which_phase,which_pattern_pool,:neuron_pattern_sizes[which_pattern_kind,which_phase,which_pattern_pool]]
+        new_spiketrain[total_size:total_size + len(motif),0] = (motif+pattern_times[i])-(time_pattern/2)
         new_spiketrain[total_size:total_size + len(motif),1] = np.ones(len(motif))
         total_size += len(motif)
 
@@ -71,65 +72,77 @@ def copy_data(datas,fill_until,total_size,new_spiketrain,n):
     datas[fill_until:fill_until+total_size,2] =  new_spiketrain[:total_size,1]
     return fill_until+total_size
 
-def pattern_pool_oscillation(n,index_pat_kind):
-    pattern_train = homogeneous_poisson_process((rate+var_rate)*pq.Hz,t_start=0*pq.s,t_stop=time_pattern*pq.s,as_array=True)
-    pattern_signal = np.zeros(int(time_pattern/delta_pat))
-    osc_pattern_trains = dict()
-    all_signals=dict()
-    #print(pattern_train)
-    for i in pattern_train:
-        pattern_signal[int(i/delta_pat)]=1/delta_pat
-    #print(np.sum(pattern_signal))
-    pattern_signal_convolveld = np.convolve(pattern_signal,kern)/np.sum(kern)
-    #print(np.sum(pattern_signal_convolveld))
-    for t in sin_signals_pattern:
-        osc = sin_signals_pattern[t]
-        osc_pattern_trains[t] = []
-        oscillation_pattern = osc[:-1]*pattern_signal_convolveld
-        #print(np.sum(oscillation_pattern))
-        all_signals[t] = TimeFunction((extanded_sample_pattern[:-1], oscillation_pattern), dt=delta_pat)
+def pattern_pool_oscillation():
 
-    for j in range(len(times_phase)):
-        t = times_phase[j]
-        sim = SimuInhomogeneousPoisson([all_signals[t]], end_time=(time_pattern)*2, verbose=False)
+    neuron_pattern_pools = np.empty((nb_pattern,len(times_phase),pool_size,int(((rate*time_pattern))*20)))
+    neuron_pattern_pools_sizes = np.empty((nb_pattern,len(times_phase),pool_size),dtype=int)
+
+    for index_pat_kind in range(nb_pattern):
+
+        pattern_train = homogeneous_poisson_process((rate+var_rate)*pq.Hz,t_start=0*pq.s,t_stop=time_pattern*pq.s,as_array=True)
+        pattern_signal = np.zeros(int(time_pattern/delta_pat))
+
+        all_signals=dict()
+        #print(pattern_train)
+        for i in pattern_train:
+            pattern_signal[int(i/delta_pat)]=1/delta_pat
+        #print(np.sum(pattern_signal))
+        pattern_signal_convolveld = np.convolve(pattern_signal,kern)/np.sum(kern)
+        #print(np.sum(pattern_signal_convolveld))
+        for t in sin_signals_pattern:
+            osc = sin_signals_pattern[t]
+
+            oscillation_pattern = osc[:-1]*pattern_signal_convolveld
+            #print(np.sum(oscillation_pattern))
+            all_signals[t] = TimeFunction((extanded_sample_pattern[:-1], oscillation_pattern), dt=delta_pat)
+
+        for j in range(len(times_phase)):
+            t = times_phase[j]
+            sim = SimuInhomogeneousPoisson([all_signals[t]], end_time=(time_pattern)*2, verbose=False)
+            for p in range(pool_size):
+                sim.simulate()
+                motif = sim.timestamps[0]
+                #print(all_pattern_pools[n,index_pat_kind,j,p,:len(motif)])
+                neuron_pattern_pools[index_pat_kind,j,p,:len(motif)] = motif
+                neuron_pattern_pools_sizes[index_pat_kind,j,p] = len(motif)
+                sim.reset()
+
+    return neuron_pattern_pools,neuron_pattern_pools_sizes
+
+
+def pattern_pool():
+
+    neuron_pattern_pools = np.empty((nb_pattern,pool_size,int(((rate*time_pattern))*20)))
+    neuron_pattern_pools_sizes = np.empty((nb_pattern,pool_size),dtype=int)
+    
+    for index_pat_kind in range(nb_pattern):
+
+        pattern_train = homogeneous_poisson_process((rate)*pq.Hz,t_start=0*pq.s,t_stop=time_pattern*pq.s,as_array=True)
+        pattern_signal = np.zeros(int(time_pattern/delta_pat))
+        
+        #print(pattern_train)
+        for i in pattern_train:
+            pattern_signal[int(i/delta_pat)]=1/delta_pat
+        #print(np.sum(pattern_signal))
+        pattern_signal_convolveld = np.convolve(pattern_signal,kern)/np.sum(kern)
+        timefunction = TimeFunction((extanded_sample_pattern[:-1], pattern_signal_convolveld), dt=delta_pat)
+        #print(np.sum(pattern_signal_convolveld))
+
+        sim = SimuInhomogeneousPoisson([timefunction], end_time=(time_pattern)*2, verbose=False)
         for p in range(pool_size):
             sim.simulate()
             motif = sim.timestamps[0]
-            #print(all_pattern_pools[n,index_pat_kind,j,p,:len(motif)])
-            all_pattern_pools[n,index_pat_kind,j,p,:len(motif)] = motif
-            pattern_pools_sizes[n,index_pat_kind,j,p] = len(motif)
+            neuron_pattern_pools[index_pat_kind,p,:len(motif)] = motif
+            neuron_pattern_pools_sizes[index_pat_kind,p] = len(motif)
             sim.reset()
 
-    return osc_pattern_trains
-
-def pattern_pool(n,index_pat_kind):
-    
-    pattern_train = homogeneous_poisson_process((rate)*pq.Hz,t_start=0*pq.s,t_stop=time_pattern*pq.s,as_array=True)
-    pattern_signal = np.zeros(int(time_pattern/delta_pat))
-    pattern_trains = []
-    #print(pattern_train)
-    for i in pattern_train:
-        pattern_signal[int(i/delta_pat)]=1/delta_pat
-    #print(np.sum(pattern_signal))
-    pattern_signal_convolveld = np.convolve(pattern_signal,kern)/np.sum(kern)
-    timefunction = TimeFunction((extanded_sample_pattern[:-1], pattern_signal_convolveld), dt=delta_pat)
-    #print(np.sum(pattern_signal_convolveld))
-
-    sim = SimuInhomogeneousPoisson([timefunction], end_time=(time_pattern)*2, verbose=False)
-    for p in range(pool_size):
-        sim.simulate()
-        motif = sim.timestamps[0]
-        all_pattern_pools[n,index_pat_kind,p,:len(motif)] = motif
-        pattern_pools_sizes[n,index_pat_kind,p] = len(motif)
-        sim.reset()
-
-    return pattern_trains 
+    return neuron_pattern_pools,neuron_pattern_pools_sizes
 
 
 def simulate_no_pattern_neuron(n):
 
     if not oscillation:
-        spiketrain = homogeneous_poisson_process(rate*pq.Hz,t_start=start,t_stop=start+time_seg,as_array=True)
+        spiketrain = homogeneous_poisson_process(rate*pq.Hz,t_start=start*pq.s,t_stop=(start+time_seg)*pq.s,as_array=True)
     else:
         sim = SimuInhomogeneousPoisson([sign], end_time=time_seg, verbose=False)
         sim.simulate()
@@ -138,39 +151,36 @@ def simulate_no_pattern_neuron(n):
     return spiketrain,n,len(spiketrain)
 
 
-def simulate_pattern_neuron(n):
+def simulate_pattern_neuron(n,neuron_pattern_pools,neuron_pattern_sizes):
    
     if not oscillation:
-        spiketrain = homogeneous_poisson_process(rate*pq.Hz,t_start=start,t_stop=start+time_seg,as_array=True)
+        spiketrain = homogeneous_poisson_process(rate*pq.Hz,t_start=start*pq.s,t_stop=(start+time_seg)*pq.s,as_array=True)
     else:
         sim = SimuInhomogeneousPoisson([sign], end_time=time_seg, verbose=False)
         sim.simulate()
         spiketrain = sim.timestamps[0]+start
-    #new_spiketrain = np.empty( int(((rate*time_sim)/nb_segment)*10) ,dtype=np.float32)
 
     if len(spiketrain)>0:
-        if s == 0 :
-            for i in range(nb_pattern):
-                # make_motif
-                if not oscillation:
-                    pattern_pool(n,i)
-                    
-                else :
-                    pattern_pool_oscillation(n,i)
-
-
  
         actual_spike = outside_pattern(spiketrain,new_spiketrain,pattern_times)
         if not oscillation:
-            total_size = pattern_placement(actual_spike,pattern_times,new_spiketrain,motifs_sizes,n,choices_patterns)
+            total_size = pattern_placement(neuron_pattern_pools,neuron_pattern_sizes,actual_spike,pattern_times,new_spiketrain,n,choices_patterns)
         else :
-            total_size = pattern_placement_oscillation(actual_spike,pattern_times,new_spiketrain,motifs_sizes,n,choices_patterns)
-
+            total_size = pattern_placement_oscillation(neuron_pattern_pools,neuron_pattern_sizes,actual_spike,pattern_times,new_spiketrain,n,choices_patterns)
 
         return new_spiketrain[:total_size],n,total_size
     
-    return spiketrain,n,0
+    return spiketrain,n,0,neuron_pattern_pools,neuron_pattern_sizes
 
+def do_patterns_neuron(n):
+    
+    if not oscillation:
+        neuron_pattern_pools,neuron_pattern_sizes = pattern_pool()
+            
+    else :
+        neuron_pattern_pools,neuron_pattern_sizes = pattern_pool_oscillation()
+
+    return neuron_pattern_pools,neuron_pattern_sizes,n
 #%%
 
 # parser = argparse.ArgumentParser(description='Generate spike trains')
@@ -210,26 +220,26 @@ def simulate_pattern_neuron(n):
 # %%
 rate = 10
 var_rate = 10
-oscillation = False
-frequency = 36
-time_sim = 1000
-sampling_rate = 11
-nb_neurons = 10
+oscillation = True
+frequency = 1
+time_sim = 20
+sampling_rate = 10
+nb_neurons = 60
 nb_segment = 1
 outdir = "."
 pattern = True
 
 if pattern :
-    time_pattern = 0.1
+    time_pattern = 1
     nb_pattern = 1
     sparsity_pattern = 1
-    pattern_frequency = 3
-    ref_pattern = 0.05
+    pattern_frequency = 0.4
+    ref_pattern = 1
 #%%
 if pattern:
     Lin_func_kern =lambda x,sigma: np.exp(-np.square(x/sigma))
     delta_pat = 0.002
-    pool_size = 1000
+    pool_size = 100
     sample_kern = np.linspace(0,time_pattern,int(time_pattern/delta_pat))
     membran_time = 0.01
     kern = Lin_func_kern(sample_kern-time_pattern/2,membran_time)
@@ -245,10 +255,10 @@ not_concerned_neurons = set(range(nb_neurons))
 concerned_neurons= set()
 
 if pattern:
-
+    sampling_pattern = 31
     sample_pattern = np.linspace(0,time_pattern,int(time_pattern/delta_pat))
     extanded_sample_pattern = np.linspace(0,2*time_pattern,int((time_pattern*2)/delta_pat))
-    times_phase = np.array([t for t in np.linspace(0,np.pi*2,sampling_rate)])
+    times_phase = np.array([t for t in np.linspace(0,np.pi*2,sampling_pattern)])
     raw_sin_signals_pattern= np.array([np.sin(extanded_sample_pattern*frequency*np.pi*2+t) for t in times_phase]) #replace per sampling rate
     scaled_sin_signals_pattern = ((raw_sin_signals_pattern/2)*((var_rate)/rate))+(1-((var_rate)/rate)/2)
     sin_signals_pattern = dict(zip(times_phase,scaled_sin_signals_pattern))
@@ -261,23 +271,20 @@ if pattern:
     all_pattern_times = np.empty((int(time_sim*pattern_frequency*5),2))
     actual_nb_pattern = 0
 
-    if oscillation:
-        all_pattern_pools = np.empty((nb_neurons,nb_pattern,len(times_phase),pool_size,int(((rate*time_pattern))*20)))
-        pattern_pools_sizes = np.empty((nb_neurons,nb_pattern,len(times_phase),pool_size),dtype=int)
-    else :
-        all_pattern_pools = np.empty((nb_neurons,nb_pattern,pool_size,int(((rate*time_pattern))*20)))
-        pattern_pools_sizes = np.empty((nb_neurons,nb_pattern,pool_size),dtype=int)
-
 #res = pattern_pool(time_pattern,delta_pat,sin_signals_pattern,extanded_sample_pattern,1000)
 #plt.plot(np.array(oscillation_patterns).T)
 # %%
 datas = np.empty((int(((rate*time_sim*nb_neurons)/nb_segment)*2),3),dtype=np.float32)
-time_seg =  (time_sim/nb_segment)*pq.s
+time_seg =  (time_sim/nb_segment)
+patterns_neurons = dict()
+times_patterns_neurons = dict()
+#pattern_times = homogeneous_poisson_process(pattern_frequency*pq.Hz,t_start=0*pq.s,t_stop =time_seg*(0+1)*pq.s,refractory_period = (time_pattern+ref_pattern)*pq.s, as_array=True )
+
 # %%
 for s in range(nb_segment):
     start = time_seg*s
     if pattern:
-        pattern_times = homogeneous_poisson_process(pattern_frequency*pq.Hz,t_start=start,t_stop =time_seg*(s+1),refractory_period = (time_pattern+ref_pattern)*pq.s, as_array=True )
+        pattern_times = homogeneous_poisson_process(pattern_frequency*pq.Hz,t_start=start*pq.s,t_stop =time_seg*(s+1)*pq.s,refractory_period = (time_pattern+ref_pattern)*pq.s, as_array=True )
         choices_patterns = np.random.randint(0,nb_pattern,len(pattern_times))
         choices_pool = np.random.randint(0,pool_size,len(pattern_times))
 
@@ -289,30 +296,35 @@ for s in range(nb_segment):
     fill_until = 0
 
 
-    with Pool(processes=36) as pool:
+    with Pool(processes=2) as pool:
 
         multiple_thread = [pool.apply_async(simulate_no_pattern_neuron,(n,)) for n in not_concerned_neurons]
         
         for res in multiple_thread:
-            final_spike_train,n,total_size=res.get()
+            final_spike_train,n,total_size,neuron_pattern_pools,neuron_pattern_sizes=res.get()
             final_spike_train_color = np.array([final_spike_train,np.zeros(len(final_spike_train))]).T
-            print(n)
             fill_until = copy_data(datas,fill_until,total_size,final_spike_train,n)
     
     if len(concerned_neurons)>0:
+        with Pool(processes=2) as pool:
+            multiple_thread = [pool.apply_async(do_patterns_neuron,(n,)) for n in concerned_neurons]
+            for res in multiple_thread:
+                patterns_neuron,times_patterns_neuron,n = res.get()
+                patterns_neurons[n] = patterns_neuron
+                times_patterns_neurons[n] = times_patterns_neuron
 
-        with Pool(processes=36) as pool:
+        with Pool(processes=2) as pool:
         
-            multiple_thread = [pool.apply_async(simulate_pattern_neuron,(n,)) for n in concerned_neurons]
+            multiple_thread = [pool.apply_async(simulate_pattern_neuron,(n,patterns_neurons[n],times_patterns_neurons[n])) for n in concerned_neurons]
 
             for res in multiple_thread:
                 final_spike_train,n,total_size=res.get()
                 print(n)
                 fill_until = copy_data(datas,fill_until,total_size,final_spike_train,n)
 
+    fill_data = datas[:fill_until]
+    fill_data = fill_data[np.argsort(fill_data[:,0])]
 
-# %%
-plt.scatter([1,2,3],[1,2,3])
 
 # %%
 # start_timer = timer()
@@ -332,3 +344,5 @@ plt.scatter([1,2,3],[1,2,3])
 #     sim.reset()
 # end = timer()
 # print(end-start_timer)
+
+# %%
