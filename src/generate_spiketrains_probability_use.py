@@ -35,7 +35,7 @@ def pattern_placement(neuron_pattern_pools,neuron_pattern_sizes,actual_spike,pat
         which_pattern_kind = choices_patterns[i]
         which_pattern_pool = choices_pool[i]
         motif = neuron_pattern_pools[which_pattern_kind,which_pattern_pool,:neuron_pattern_sizes[which_pattern_kind,which_pattern_pool]]
-        new_spiketrain[total_size:total_size + len(motif),0] = (motif+pattern_times[i])-time_pattern/2
+        new_spiketrain[total_size:total_size + len(motif),0] = (motif+pattern_times[i])-(time_pattern/2)
         new_spiketrain[total_size:total_size + len(motif),1] = np.ones(len(motif))
         total_size += len(motif)
 
@@ -49,7 +49,7 @@ def pattern_placement_oscillation(neuron_pattern_pools,neuron_pattern_sizes,actu
         
         which_pattern_kind = choices_patterns[i]
         which_pattern_pool = choices_pool[i]
-        rephased_time = (pattern_times[i]-(time_pattern/2))*(np.pi*2)
+        rephased_time = (pattern_times[i]-(time_pattern/2))*(np.pi*2)*frequency
         phase = (rephased_time%(2*np.pi))
         which_phase = np.abs(times_phase-phase).argmin()+1
         motif = neuron_pattern_pools[which_pattern_kind,which_phase,which_pattern_pool,:neuron_pattern_sizes[which_pattern_kind,which_phase,which_pattern_pool]]
@@ -79,7 +79,9 @@ def pattern_pool_oscillation():
 
     for index_pat_kind in range(nb_pattern):
 
-        pattern_train = homogeneous_poisson_process((rate+var_rate)*pq.Hz,t_start=0*pq.s,t_stop=time_pattern*pq.s,as_array=True)
+        sim = SimuInhomogeneousPoisson([sign], end_time=time_pattern, verbose=False)
+        sim.simulate()
+        pattern_train = sim.timestamps[0]
         pattern_signal = np.zeros(int(time_pattern/delta_pat))
 
         all_signals=dict()
@@ -117,7 +119,13 @@ def pattern_pool():
     
     for index_pat_kind in range(nb_pattern):
 
-        pattern_train = homogeneous_poisson_process((rate)*pq.Hz,t_start=0*pq.s,t_stop=time_pattern*pq.s,as_array=True)
+        #pattern_train = homogeneous_poisson_process(rate*pq.Hz,t_start=0*pq.s,t_stop=time_pattern*pq.s,as_array=True)
+
+        sim = SimuInhomogeneousPoisson([sign], end_time=time_pattern, verbose=False)
+        sim.simulate()
+        pattern_train = sim.timestamps[0]
+
+
         pattern_signal = np.zeros(int(time_pattern/delta_pat))
         
         #print(pattern_train)
@@ -128,7 +136,7 @@ def pattern_pool():
         timefunction = TimeFunction((extanded_sample_pattern[:-1], pattern_signal_convolveld), dt=delta_pat)
         #print(np.sum(pattern_signal_convolveld))
 
-        sim = SimuInhomogeneousPoisson([timefunction], end_time=(time_pattern)*2, verbose=False)
+        sim = SimuInhomogeneousPoisson([timefunction], end_time=time_pattern*2, verbose=False)
         for p in range(pool_size):
             sim.simulate()
             motif = sim.timestamps[0]
@@ -141,28 +149,23 @@ def pattern_pool():
 
 def simulate_no_pattern_neuron(n):
 
-    if not oscillation:
-        spiketrain = homogeneous_poisson_process(rate*pq.Hz,t_start=start*pq.s,t_stop=(start+time_seg)*pq.s,as_array=True)
-    else:
-        sim = SimuInhomogeneousPoisson([sign], end_time=time_seg, verbose=False)
-        sim.simulate()
-        spiketrain = sim.timestamps[0]+start
+    sim = SimuInhomogeneousPoisson([sign], end_time=time_seg, verbose=False)
+    sim.simulate()
+    spiketrain = sim.timestamps[0]+start
 
     return spiketrain,n,len(spiketrain)
 
 
 def simulate_pattern_neuron(n,neuron_pattern_pools,neuron_pattern_sizes):
    
-    if not oscillation:
-        spiketrain = homogeneous_poisson_process(rate*pq.Hz,t_start=start*pq.s,t_stop=(start+time_seg)*pq.s,as_array=True)
-    else:
-        sim = SimuInhomogeneousPoisson([sign], end_time=time_seg, verbose=False)
-        sim.simulate()
-        spiketrain = sim.timestamps[0]+start
+    spiketrain,_,_ = simulate_no_pattern_neuron(n)
+
+    print(spiketrain)
 
     if len(spiketrain)>0:
  
         actual_spike = outside_pattern(spiketrain,new_spiketrain,pattern_times)
+        #print(new_spiketrain[:actual_spike])
         if not oscillation:
             total_size = pattern_placement(neuron_pattern_pools,neuron_pattern_sizes,actual_spike,pattern_times,new_spiketrain,n,choices_patterns)
         else :
@@ -170,7 +173,7 @@ def simulate_pattern_neuron(n,neuron_pattern_pools,neuron_pattern_sizes):
 
         return new_spiketrain[:total_size],n,total_size
     
-    return spiketrain,n,0,neuron_pattern_pools,neuron_pattern_sizes
+    return spiketrain,n,0
 
 def do_patterns_neuron(n):
     
@@ -218,36 +221,44 @@ def do_patterns_neuron(n):
 #     pattern_frequency = args.patternfrequency
 #     ref_pattern = args.refpattern
 # %%
-rate = 10
-var_rate = 10
-oscillation = True
-frequency = 1
-time_sim = 20
+rate = 20
+var_rate = 20
+oscillation = False
+frequency = 72
+time_sim = 1
 sampling_rate = 10
-nb_neurons = 60
+nb_neurons = 10
 nb_segment = 1
 outdir = "."
 pattern = True
 
 if pattern :
-    time_pattern = 1
+    time_pattern = 0.1
     nb_pattern = 1
     sparsity_pattern = 1
-    pattern_frequency = 0.4
-    ref_pattern = 1
+    pattern_frequency = 4
+    ref_pattern = 0.05
 #%%
+# %%
+datas = np.empty((int(((rate*time_sim*nb_neurons)/nb_segment)*2),3),dtype=np.float32)
+time_seg =  (time_sim/nb_segment)
+patterns_neurons = dict()
+times_patterns_neurons = dict()
+
 if pattern:
     Lin_func_kern =lambda x,sigma: np.exp(-np.square(x/sigma))
-    delta_pat = 0.002
+    delta_pat = 0.001
     pool_size = 100
     sample_kern = np.linspace(0,time_pattern,int(time_pattern/delta_pat))
     membran_time = 0.01
     kern = Lin_func_kern(sample_kern-time_pattern/2,membran_time)
 if oscillation:
-    samples = np.linspace(0,time_sim,time_sim*sampling_rate*frequency)
+    samples = np.linspace(0,time_sim,int(time_sim*sampling_rate*frequency))
     sin_signal = np.sin(samples*frequency*np.pi*2)
     signal = rate +(var_rate*sin_signal)
     sign = TimeFunction((samples, signal), dt=1/(sampling_rate*frequency))
+else :
+    sign = TimeFunction(([0,1], [rate,rate]), dt=time_seg)
 
 
 
@@ -273,11 +284,6 @@ if pattern:
 
 #res = pattern_pool(time_pattern,delta_pat,sin_signals_pattern,extanded_sample_pattern,1000)
 #plt.plot(np.array(oscillation_patterns).T)
-# %%
-datas = np.empty((int(((rate*time_sim*nb_neurons)/nb_segment)*2),3),dtype=np.float32)
-time_seg =  (time_sim/nb_segment)
-patterns_neurons = dict()
-times_patterns_neurons = dict()
 #pattern_times = homogeneous_poisson_process(pattern_frequency*pq.Hz,t_start=0*pq.s,t_stop =time_seg*(0+1)*pq.s,refractory_period = (time_pattern+ref_pattern)*pq.s, as_array=True )
 
 # %%
@@ -302,18 +308,19 @@ for s in range(nb_segment):
         
         for res in multiple_thread:
             final_spike_train,n,total_size,neuron_pattern_pools,neuron_pattern_sizes=res.get()
+            print(n)
             final_spike_train_color = np.array([final_spike_train,np.zeros(len(final_spike_train))]).T
             fill_until = copy_data(datas,fill_until,total_size,final_spike_train,n)
     
     if len(concerned_neurons)>0:
-        with Pool(processes=2) as pool:
+        with Pool(processes=36) as pool:
             multiple_thread = [pool.apply_async(do_patterns_neuron,(n,)) for n in concerned_neurons]
             for res in multiple_thread:
                 patterns_neuron,times_patterns_neuron,n = res.get()
                 patterns_neurons[n] = patterns_neuron
                 times_patterns_neurons[n] = times_patterns_neuron
 
-        with Pool(processes=2) as pool:
+        with Pool(processes=36) as pool:
         
             multiple_thread = [pool.apply_async(simulate_pattern_neuron,(n,patterns_neurons[n],times_patterns_neurons[n])) for n in concerned_neurons]
 
@@ -324,7 +331,21 @@ for s in range(nb_segment):
 
     fill_data = datas[:fill_until]
     fill_data = fill_data[np.argsort(fill_data[:,0])]
-
+#%%
+def f(x, y):
+    return np.sin(x*frequency*np.pi*2)
+#%%
+if oscillation:
+    fig, ax = plt.subplots()
+    x = np.linspace(0,time_sim+time_pattern,1000)
+    y = np.linspace(0,nb_neurons,1000)
+    X, Y = np.meshgrid(x, y)
+    Z=f(X,Y)
+    ax.scatter(fill_data[:,0],fill_data[:,1],c=["red" if i == 1 else "blue" for i in fill_data[:,2]],s=10,zorder=3)
+    ax.contour(X,Y,Z,100,cmap='Greys')
+    plt.show()
+#%%
+plt.scatter(fill_data[:,0],fill_data[:,1],c=["red" if i == 1 else "blue" for i in fill_data[:,2]],s=10)
 
 # %%
 # start_timer = timer()
