@@ -6,14 +6,14 @@
 	SIZE=4096
 	SIZE_EXT=1024
 	NB_SEGMENT=10
-	NB_PATTERN=4
-	PATTERNSIZE=0.05
-	PATTERNFREQUENCY=10
-	SPARSITYPATTERN=0.75
-	REFPAT=0.025
+	NB_PATTERN=1
+	PATTERNSIZE=0.1
+	PATTERNFREQUENCY=3
+	SPARSITYPATTERN=1
+	REFPAT=0.05
 
 	#_dicted_pat_6h
-	OUTDIR="/mnt/data1/data_paul/sim_less_stim_neurons_nocons_suite_6h_pat4_ref_0.1_spars0.75_size0.05_intspars0.07_wei0.52_wii0.06_wee0.8_wie0.06"
+	OUTDIR="/mnt/data1/data_paul/sim_less_stim_neurons_nocons_corrected_pattern_generation"
 	LOADDIR="/mnt/data1/data_paul/sim_less_stim_neurons_nocons"
 	SPIKETRAINS_FILE="spiketrains"
 	mkdir -p $OUTDIR
@@ -27,9 +27,9 @@
 		--load $LOADDIR/rf1 \
 		--dir $OUTDIR \
 		--prefix rf1 --size $SIZE --save \
-		--wie 0.06 --wee 0.8 --wext 0.2 --wei 0.52 --wii 0.06 \
+		--wie 0.08 --wee 0.1 --wext 0.2 --wei 0.72 --wii 0.08 \
 		--simtime $TIME --tauf $TAUF --taud $TAUD \
-		--intsparse 0.07 \
+		--intsparse 0.05 \
 		--extsparse 0.2 \
 		--off 2.0 --on 1.0 \
 		--beta $BETA --eta $ETA --scale $SCALE --weight_a $WEIGHTA --alpha $ALPHA --delta 0.02 \

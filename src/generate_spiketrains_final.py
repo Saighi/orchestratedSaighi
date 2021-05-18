@@ -12,15 +12,17 @@ import numba
 
 @numba.jit(nopython=True)
 def outside_pattern(spiketrain,new_spiketrain,pattern_times):
-    actual_pattern = 0
+    actual_pattern = -1
     actual_spike = 0
     for i in range(len(spiketrain)):
-        if actual_pattern<len(pattern_times)-1:
-            if spiketrain[i]>pattern_times[actual_pattern+1]:
-                actual_pattern+=1
-        if spiketrain[i]>pattern_times[actual_pattern]+pattern_size:
+        
+        while actual_pattern<len(pattern_times)-1 and spiketrain[i]>pattern_times[actual_pattern+1]:
+            actual_pattern+=1
+
+        if not spiketrain[i]<pattern_times[actual_pattern]+pattern_size :
             new_spiketrain[actual_spike] = spiketrain[i]
             actual_spike+=1
+
     return actual_spike
 
 @numba.jit(nopython=True)

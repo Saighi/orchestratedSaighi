@@ -22,7 +22,7 @@ time_step =0.0001
 
 # %%
 num_mpi_ranks = 4 # the number of sims you used in parallel
-datadir = os.path.expanduser("/mnt/data1/data_paul/sim_less_stim_neurons_structured") # Set this to your data path
+datadir = os.path.expanduser("/mnt/data1/data_paul/sim_rate20") # Set this to your data path
 prefix = "rf1"
 
 #%%
