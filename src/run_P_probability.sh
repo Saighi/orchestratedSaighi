@@ -2,10 +2,10 @@
 {
 	. ./globalvars.sh
 
-	TIME=21800
+	TIME=1500
 	SIZE=4096
 	SIZE_EXT=1024
-	NB_SEGMENT=5
+	NB_SEGMENT=1
 	RATE=10
 	NB_PATTERN=1
 	PATTERNSIZE=0.1
@@ -13,14 +13,14 @@
 	SPARSITYPATTERN=1
 	REFPAT=0.05
 	VARRATE=$RATE
-	FREQUENCY=60
+	FREQUENCY=10
 	SAMPLINGRATE=10
 
-	OUTDIR="/mnt/data1/data_paul/sim_probability_pattern"
+	OUTDIR="/mnt/data1/data_paul/sim_oscillation30_nopattern"
 	SPIKETRAINS_FILE="spiketrains"
 	mkdir -p $OUTDIR
-	python generate_spiketrains_probability_use.py -rate $RATE -timesim $TIME -samplingrate 10 -nbneurons $SIZE_EXT -nbsegment $NB_SEGMENT -outdir $OUTDIR -pattern -timepattern $PATTERNSIZE -nbpattern $NB_PATTERN -sparsitypattern $SPARSITYPATTERN -patternfrequency $PATTERNFREQUENCY -refpattern $REFPAT
- 	#python generate_spiketrains_probability_use.py -oscillation -varrate $VARRATE -frequency $FREQUENCY -samplingrate $SAMPLINGRATE -rate $RATE -timesim $TIME -samplingrate 10 -nbneurons $SIZE_EXT -nbsegment $NB_SEGMENT -outdir $OUTDIR 
+	#python generate_spiketrains_probability_use.py -rate $RATE -timesim $TIME -samplingrate 10 -nbneurons $SIZE_EXT -nbsegment $NB_SEGMENT -outdir $OUTDIR -pattern -timepattern $PATTERNSIZE -nbpattern $NB_PATTERN -sparsitypattern $SPARSITYPATTERN -patternfrequency $PATTERNFREQUENCY -refpattern $REFPAT
+ 	python generate_spiketrains_probability_use.py -oscillation -varrate $VARRATE -frequency $FREQUENCY -samplingrate $SAMPLINGRATE -rate $RATE -timesim $TIME -samplingrate 10 -nbneurons $SIZE_EXT -nbsegment $NB_SEGMENT -outdir $OUTDIR 
 
 	make -C $DIR -j8 sim_rc_p10c_P_dicted && mpirun -n $NP $DIR/sim_rc_p10c_P_dicted \
 		--dir $OUTDIR \

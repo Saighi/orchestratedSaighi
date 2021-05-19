@@ -34,7 +34,7 @@ def pattern_placement(neuron_pattern_pools,neuron_pattern_sizes,actual_spike,pat
         which_pattern_kind = choices_patterns[i]
         which_pattern_pool = choices_pool[i]
         motif = neuron_pattern_pools[which_pattern_kind,which_pattern_pool,:neuron_pattern_sizes[which_pattern_kind,which_pattern_pool]]
-        new_spiketrain[total_size:total_size + len(motif)] = (motif+pattern_times[i])-(time_pattern/2)
+        new_spiketrain[total_size:total_size + len(motif)] = motif+pattern_times[i]
         total_size += len(motif)
 
     return total_size
@@ -235,6 +235,7 @@ if pattern :
     pattern_frequency = args.patternfrequency
     ref_pattern = args.refpattern
 
+
 datas = np.empty((int(((rate*time_sim*nb_neurons)/nb_segment)*2),2),dtype=np.float32)
 time_seg =  (time_sim/nb_segment)
 patterns_neurons = dict()
@@ -286,7 +287,7 @@ if pattern:
 for s in range(nb_segment):
     start = time_seg*s
     if pattern:
-        pattern_times = homogeneous_poisson_process(pattern_frequency*pq.Hz,t_start=start*pq.s,t_stop =time_seg*(s+1)*pq.s,refractory_period = (time_pattern+ref_pattern)*pq.s, as_array=True )
+        pattern_times = homogeneous_poisson_process(pattern_frequency*pq.Hz,t_start=(start+time_pattern)*pq.s,t_stop =time_seg*(s+1)*pq.s,refractory_period = (time_pattern+ref_pattern)*pq.s, as_array=True )
         choices_patterns = np.random.randint(0,nb_pattern,len(pattern_times))
         choices_pool = np.random.randint(0,pool_size,len(pattern_times))
 
@@ -298,7 +299,7 @@ for s in range(nb_segment):
     fill_until = 0
 
 
-    with Pool(processes=2) as pool:
+    with Pool(processes=36) as pool:
 
         multiple_thread = [pool.apply_async(simulate_no_pattern_neuron,(n,)) for n in not_concerned_neurons]
         
@@ -308,12 +309,13 @@ for s in range(nb_segment):
             fill_until = copy_data(datas,fill_until,total_size,final_spike_train,n)
     
     if len(concerned_neurons)>0:
-        with Pool(processes=36) as pool:
-            multiple_thread = [pool.apply_async(do_patterns_neuron,(n,)) for n in concerned_neurons]
-            for res in multiple_thread:
-                patterns_neuron,times_patterns_neuron,n = res.get()
-                patterns_neurons[n] = patterns_neuron
-                times_patterns_neurons[n] = times_patterns_neuron
+        if s == 0:
+            with Pool(processes=36) as pool:
+                multiple_thread = [pool.apply_async(do_patterns_neuron,(n,)) for n in concerned_neurons]
+                for res in multiple_thread:
+                    patterns_neuron,times_patterns_neuron,n = res.get()
+                    patterns_neurons[n] = patterns_neuron
+                    times_patterns_neurons[n] = times_patterns_neuron
 
         with Pool(processes=36) as pool:
         
@@ -341,3 +343,4 @@ if pattern:
         fmt = '\n'.join([fmt]*all_pattern_times[:actual_nb_pattern].shape[0])
         data = fmt % tuple(all_pattern_times[:actual_nb_pattern].ravel())
         f.write(data)
+

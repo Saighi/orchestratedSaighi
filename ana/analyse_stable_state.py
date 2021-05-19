@@ -20,7 +20,7 @@ import plotly.graph_objects as go
 
 # %%
 num_mpi_ranks = 4 # the number of sims you used in parallel
-datadir = os.path.expanduser("/mnt/data1/data_paul/sim_less_stim_neurons_nocons_suite_6h_pat_ref") # Set this to your data path
+datadir = os.path.expanduser("/mnt/data1/data_paul/sim_probability_pattern") # Set this to your data path
 prefix = "rf1"
 
 #%%
@@ -150,7 +150,7 @@ plt.plot(np.median(sie,axis = 1))
 
 
 # %%
-total_time = 20000
+total_time = 1300
 trange = 100
 numberof = 20
 for t in range(int(total_time/numberof),total_time,int(total_time/numberof)):
@@ -173,7 +173,7 @@ for t in range(int(total_time/numberof),total_time,int(total_time/numberof)):
 # plt.show()
 # %%
 NE = 4096
-time_start = 21700
+time_start = 1400
 trange = 20
 times, cells = np.array(sfo.get_spikes(t_start=time_start,t_stop=time_start+trange)).T
 freqs = []
