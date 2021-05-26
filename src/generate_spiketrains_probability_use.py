@@ -20,7 +20,7 @@ def outside_pattern(spiketrain,new_spiketrain,pattern_times):
         while actual_pattern<len(pattern_times)-1 and spiketrain[i]>pattern_times[actual_pattern+1]:
             actual_pattern+=1
 
-        if  spiketrain[i]>pattern_times[actual_pattern]+time_pattern or spiketrain[i]<pattern_times[actual_pattern] :
+        if  (actual_pattern == -1 and spiketrain[i]<pattern_times[actual_pattern+1]) or spiketrain[i]>pattern_times[actual_pattern]+time_pattern or spiketrain[i]<pattern_times[actual_pattern] :
             new_spiketrain[actual_spike] = spiketrain[i]
             actual_spike+=1
 
@@ -96,7 +96,7 @@ def pattern_pool_oscillation():
         for t in sin_signals_pattern:
             osc = sin_signals_pattern[t]
 
-            oscillation_pattern = osc[:-1]*pattern_signal_convolveld
+            oscillation_pattern = osc*pattern_signal_convolveld
             all_signals[t] = TimeFunction((sample_pattern, oscillation_pattern), dt=delta_pat)
 
         for j in range(len(times_phase)):
@@ -163,18 +163,20 @@ def pattern_pool():
 
 def simulate_no_pattern_neuron(n):
 
-    sim = SimuInhomogeneousPoisson([sign], end_time=time_seg, verbose=False)
+    sim = SimuInhomogeneousPoisson([sign],end_time =end_time , verbose=False)
     sim.simulate()
-    spiketrain = sim.timestamps[0]+start
+    spiketrain = sim.timestamps[0]
 
     return spiketrain,n,len(spiketrain)
 
 
 def simulate_pattern_neuron(n,neuron_pattern_pools,neuron_pattern_sizes):
-    new_spiketrain = np.empty( (int(((rate*time_sim)/nb_segment)*10),) ,dtype=np.float32)
+    new_spiketrain = np.empty( (int(((rate*time_sim)/nb_segment)*10),) ,dtype=np.float64)
 
    
-    spiketrain,_,_ = simulate_no_pattern_neuron(n)
+    sim = SimuInhomogeneousPoisson([sign],end_time =end_time, verbose=False)
+    sim.simulate()
+    spiketrain = sim.timestamps[0]
     actual_spike = outside_pattern(spiketrain,new_spiketrain,pattern_times)
 
     if len(spiketrain)>0:
@@ -216,6 +218,7 @@ parser.add_argument('-timepattern',type=float,required=False)
 parser.add_argument('-patternfrequency',type=int,required=False)
 parser.add_argument('-sparsitypattern',type=float,required=False)
 parser.add_argument('-refpattern',type=float,required=False)
+parser.add_argument('-membrantime',type=float,required=False)
 args = parser.parse_args()
 
 rate = args.rate
@@ -234,9 +237,10 @@ if pattern :
     sparsity_pattern = args.sparsitypattern
     pattern_frequency = args.patternfrequency
     ref_pattern = args.refpattern
+    membran_time = args.membrantime
 
 
-datas = np.empty((int(((rate*time_sim*nb_neurons)/nb_segment)*2),2),dtype=np.float32)
+datas = np.empty((int(((rate*time_sim*nb_neurons)/nb_segment)*2),2),dtype=np.float64)
 time_seg =  (time_sim/nb_segment)
 patterns_neurons = dict()
 times_patterns_neurons = dict()
@@ -246,20 +250,19 @@ if pattern:
     delta_pat = 0.001
     pool_size = 100
     sample_kern = np.linspace(0,time_pattern,int(time_pattern/delta_pat))
-    membran_time = 0.01
+    membran_time = membran_time
     kern = Lin_func_kern(sample_kern-time_pattern/2,membran_time)
     if oscillation :
         sign_pattern = TimeFunction(([0,time_pattern], [rate+var_rate,rate+var_rate]), dt=time_pattern)
     else:
         sign_pattern = TimeFunction(([0,time_pattern], [rate,rate]), dt=time_pattern)
 
-if oscillation:
+if oscillation :
     samples = np.linspace(0,time_sim,int(time_sim*sampling_rate*frequency))
-    sin_signal = np.sin(samples*frequency*np.pi*2)
+    remove = -len(samples)%nb_segment if len(samples)%nb_segment !=0 else len(samples)
+    samples = samples[:remove]
+    sin_signal = np.sin((samples*frequency*np.pi*2)) # Ajuster la phase
     signal = rate +(var_rate*sin_signal)
-    sign = TimeFunction((samples, signal), dt=1/(sampling_rate*frequency))
-else :
-    sign = TimeFunction(([0,time_seg], [rate,rate]), dt=time_seg)
 
 
 
@@ -275,9 +278,6 @@ if pattern:
         scaled_sin_signals_pattern = ((raw_sin_signals_pattern/2)*((var_rate)/rate))+(1-((var_rate)/rate)/2)
         sin_signals_pattern = dict(zip(times_phase,scaled_sin_signals_pattern))
 
-    new_spiketrain = np.empty( int(((rate*time_sim)/nb_segment)*10) ,dtype=np.float32) #change size for longer simulations
-    all_motifs = np.empty((nb_neurons,nb_pattern,int(((rate*time_pattern))*40)))
-    motifs_sizes = np.empty((nb_neurons,nb_pattern),dtype=int)
     concerned_neurons = set( np.random.choice(range(nb_neurons),int(nb_neurons*sparsity_pattern), replace = False))
     not_concerned_neurons = not_concerned_neurons.difference(concerned_neurons)
     all_pattern_times = np.empty((int(time_sim*pattern_frequency*5),2))
@@ -286,8 +286,23 @@ if pattern:
 
 for s in range(nb_segment):
     start = time_seg*s
+    if not oscillation :
+        sign = TimeFunction(([start,start+time_seg], [rate,rate]), dt=time_seg)
+        end_time =start+time_seg
+    else :
+        start_seg = int((len(samples)/nb_segment)*s)
+        if s != nb_segment-1:
+            end_seg = int((len(samples)/nb_segment)*(s+1))+1
+        else:
+            end_seg = int((len(samples)/nb_segment)*(s+1))
+
+        elapsed_time = samples[end_seg-1]-samples[start_seg]
+    
+        sign = TimeFunction((samples[start_seg:end_seg], signal[start_seg:end_seg]), dt=elapsed_time/len(samples[start_seg:end_seg]))
+        end_time =samples[end_seg-1]
+
     if pattern:
-        pattern_times = homogeneous_poisson_process(pattern_frequency*pq.Hz,t_start=(start+time_pattern)*pq.s,t_stop =time_seg*(s+1)*pq.s,refractory_period = (time_pattern+ref_pattern)*pq.s, as_array=True )
+        pattern_times = homogeneous_poisson_process(pattern_frequency*pq.Hz,t_start=start*pq.s,t_stop =(time_seg*(s+1)-time_pattern)*pq.s,refractory_period = (time_pattern+ref_pattern)*pq.s, as_array=True )
         choices_patterns = np.random.randint(0,nb_pattern,len(pattern_times))
         choices_pool = np.random.randint(0,pool_size,len(pattern_times))
 
@@ -299,32 +314,35 @@ for s in range(nb_segment):
     fill_until = 0
 
 
-    with Pool(processes=36) as pool:
+    with Pool(processes=10) as pool:
 
         multiple_thread = [pool.apply_async(simulate_no_pattern_neuron,(n,)) for n in not_concerned_neurons]
         
         for res in multiple_thread:
             final_spike_train,n,total_size=res.get()
             print(n)
-            fill_until = copy_data(datas,fill_until,total_size,final_spike_train,n)
-    
+            if len(final_spike_train)>0:
+                
+                fill_until = copy_data(datas,fill_until,total_size,final_spike_train,n)
+        
     if len(concerned_neurons)>0:
         if s == 0:
-            with Pool(processes=36) as pool:
+            with Pool(processes=10) as pool:
                 multiple_thread = [pool.apply_async(do_patterns_neuron,(n,)) for n in concerned_neurons]
                 for res in multiple_thread:
                     patterns_neuron,times_patterns_neuron,n = res.get()
                     patterns_neurons[n] = patterns_neuron
                     times_patterns_neurons[n] = times_patterns_neuron
 
-        with Pool(processes=36) as pool:
+        with Pool(processes=10) as pool:
         
             multiple_thread = [pool.apply_async(simulate_pattern_neuron,(n,patterns_neurons[n],times_patterns_neurons[n])) for n in concerned_neurons]
 
             for res in multiple_thread:
                 final_spike_train,n,total_size=res.get()
                 print(n)
-                fill_until = copy_data(datas,fill_until,total_size,final_spike_train,n)
+                if len(final_spike_train)>0:
+                    fill_until = copy_data(datas,fill_until,total_size,final_spike_train,n)
 
     fill_data = datas[:fill_until]
     print("sorting...")

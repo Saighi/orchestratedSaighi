@@ -20,7 +20,7 @@ import plotly.graph_objects as go
 
 # %%
 num_mpi_ranks = 4 # the number of sims you used in parallel
-datadir = os.path.expanduser("/mnt/data1/data_paul/sim_probability_pattern") # Set this to your data path
+datadir = os.path.expanduser("/mnt/data1/data_paul/sim_shift_nopattern") # Set this to your data path
 prefix = "rf1"
 
 #%%
@@ -150,7 +150,8 @@ plt.plot(np.median(sie,axis = 1))
 
 
 # %%
-total_time = 1300
+NE = 4096
+total_time = 21700
 trange = 100
 numberof = 20
 for t in range(int(total_time/numberof),total_time,int(total_time/numberof)):

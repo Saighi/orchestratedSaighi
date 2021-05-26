@@ -1,6 +1,7 @@
 import numpy as np
 from neo.core import SpikeTrain
 from quantities import s
+import numba
 
 
 def inPatternOld(my_ras, dure_simu, duree_pattern, delay, multWindow=1,
@@ -113,12 +114,15 @@ def SpikesDistFromPat(spikeTrain, duree_pattern, signal_times, window=0.5,offset
 
     return times, dists
 
-def SpikesDistNeurones(spikeTrainN, duree_pattern, signal_times, window=0.5,offset=0, nb_neuron = 4096):
+@numba.jit(nopython=True)
+def SpikesDistNeurones(spikeTrainN, listsizesN, signal_times, window=0.5,offset=0, nb_neuron = 4096):
     
     spikeTrain = spikeTrainN[:,0]
     neurones = spikeTrainN[:,1]
     
-    listdistN = [[] for _ in range(nb_neuron)] 
+    #listdistN = [[] for _ in range(nb_neuron)] 
+    listdistN = np.empty((nb_neuron,10000,2))
+
     
     r = 0
 
@@ -129,10 +133,13 @@ def SpikesDistNeurones(spikeTrainN, duree_pattern, signal_times, window=0.5,offs
             if spikeTrain[spike_i] < (event-window/2)+offset:
                 r += 1
             else:
-                listdistN[int(neurones[spike_i])].append((spikeTrain[spike_i]-event,spikeTrain[spike_i]))
+                neuron = int(neurones[spike_i])
+                mtuple = spikeTrain[spike_i]-event,spikeTrain[spike_i]
+                listdistN[neuron,listsizesN[neuron]] = mtuple
+                listsizesN[neuron]+=1
 
 
-    return listdistN
+    return listdistN,listsizesN
 
 
 def in_pattern(spikeTrain, duree_pattern, signal_times):

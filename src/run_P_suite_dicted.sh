@@ -2,19 +2,19 @@
 {
 	. ./globalvars.sh
 
-	TIME=21800
+	TIME=10000
 	SIZE=4096
 	SIZE_EXT=1024
 	NB_SEGMENT=10
 	NB_PATTERN=1
 	PATTERNSIZE=0.1
-	PATTERNFREQUENCY=3
+	PATTERNFREQUENCY=4
 	SPARSITYPATTERN=1
 	REFPAT=0.05
 
 	#_dicted_pat_6h
-	OUTDIR="/mnt/data1/data_paul/sim_less_stim_neurons_nocons_corrected_pattern_generation"
-	LOADDIR="/mnt/data1/data_paul/sim_less_stim_neurons_nocons"
+	OUTDIR="/mnt/data1/data_paul/sim_less_stim_neurons_nocons_corrected_1difpat_morecoext"
+	LOADDIR="/mnt/data1/data_paul/Sim_old/sim_10Hz_nopattern_morcoext"
 	SPIKETRAINS_FILE="spiketrains"
 	mkdir -p $OUTDIR
 
@@ -27,10 +27,10 @@
 		--load $LOADDIR/rf1 \
 		--dir $OUTDIR \
 		--prefix rf1 --size $SIZE --save \
-		--wie 0.08 --wee 0.1 --wext 0.2 --wei 0.72 --wii 0.08 \
+		--wie 0.08 --wee 0.1 --wext 0.05 --wei 0.72 --wii 0.08 \
 		--simtime $TIME --tauf $TAUF --taud $TAUD \
 		--intsparse 0.05 \
-		--extsparse 0.2 \
+		--extsparse 0.8 \
 		--off 2.0 --on 1.0 \
 		--beta $BETA --eta $ETA --scale $SCALE --weight_a $WEIGHTA --alpha $ALPHA --delta 0.02 \
 		--input_spiketrains $SPIKETRAINS_FILE \

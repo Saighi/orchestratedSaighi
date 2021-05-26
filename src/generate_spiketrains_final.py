@@ -19,7 +19,7 @@ def outside_pattern(spiketrain,new_spiketrain,pattern_times):
         while actual_pattern<len(pattern_times)-1 and spiketrain[i]>pattern_times[actual_pattern+1]:
             actual_pattern+=1
 
-        if not spiketrain[i]<pattern_times[actual_pattern]+pattern_size :
+        if  (actual_pattern == -1 and spiketrain[i]<pattern_times[actual_pattern+1]) or spiketrain[i]>pattern_times[actual_pattern]+pattern_size or spiketrain[i]<pattern_times[actual_pattern] :
             new_spiketrain[actual_spike] = spiketrain[i]
             actual_spike+=1
 
@@ -87,7 +87,7 @@ if pattern :
     sparsity_pattern = args.sparsitypattern
     ref_pattern = args.refpattern
 
-    new_spiketrain = np.empty( int(((mean_rate*time_sim)/nb_segment)*10) ,dtype=np.float32) #change size for longer simulations
+    new_spiketrain = np.empty( int(((mean_rate*time_sim)/nb_segment)*10) ,dtype=np.float64) #change size for longer simulations
     all_motifs = np.empty((nb_neurons,nb_pattern,int(((mean_rate*pattern_size))*20)))
     motifs_sizes = np.empty((nb_neurons,nb_pattern),dtype=int)
     concerned_neurons = set( np.random.choice(range(nb_neurons),int(nb_neurons*sparsity_pattern), replace = False))
@@ -111,7 +111,7 @@ if pattern :
 # print("pattern_frequency: "+str(pattern_frequency))
 
 
-datas = np.empty((int(((mean_rate*time_sim*nb_neurons)/nb_segment)*2),2),dtype=np.float32)
+datas = np.empty((int(((mean_rate*time_sim*nb_neurons)/nb_segment)*2),2),dtype=np.float64)
 
 if inhomogeneous:
     rate_var = lambda n,spd : ((np.random.rand(n)*2)-1)*spd
@@ -146,7 +146,6 @@ for s in range(nb_segment):
         actual_nb_pattern+=len(pattern_times)
         
 
-    #datas = np.empty((int(((mean_rate*time_sim*nb_neurons)/nb_segment)*1.5),2),dtype=np.float32) #change size for longer simulations
     fill_until = 0
 
     for n in concerned_neurons:

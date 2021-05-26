@@ -141,14 +141,14 @@ save_connectivity(connection_nie_mat,"nie","./data",nb_neurons_i,nb_neurons_e)
 # # %%
 # plt.scatter(x_inh,y_inh, c = ["red" if n in mon_n_c else "blue" for n in range(nb_neurons_i)],alpha = .4)
 # %%
-# stritcly_connected_prop = 1/4
-# plateau = int((connectivity*nb_neurons_e)*stritcly_connected_prop)
-# probablity_rest = connectivity - (connectivity*stritcly_connected_prop)
-# nb_connection_rest = probablity_rest*nb_neurons_e
+stritcly_connected_prop = 0 #Changed
+plateau = int((connectivity*nb_neurons_e)*stritcly_connected_prop)
+probablity_rest = connectivity - (connectivity*stritcly_connected_prop)
+nb_connection_rest = probablity_rest*nb_neurons_e
 #%%
-#considered = 2000
-#distances = all_nee_d[0][:2000]
-#distances = list(range(2000))
+considered = 2000
+distances = all_nee_d[0][:2000]
+distances = list(range(2000))
 # %%
 #connection_nee = all_nee[:,:plateau]
 #%%
