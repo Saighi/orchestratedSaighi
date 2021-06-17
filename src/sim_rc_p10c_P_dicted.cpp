@@ -530,7 +530,7 @@ int main(int ac, char* av[])
 	BinarySpikeMonitor * smon_i2 = new BinarySpikeMonitor( neurons_i2, string(strbuf), size );
 
 	sprintf(strbuf, "%s/%s.%d.e.prate", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
-	PopulationRateMonitor * pmon_e = new PopulationRateMonitor( neurons_e, string(strbuf), 0.1 );
+	PopulationRateMonitor * pmon_e = new PopulationRateMonitor( neurons_e, string(strbuf), 0.001 );
 
 	//sprintf(strbuf, "%s/%s.%d.s.prate", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
 	//PopulationRateMonitor * pmon_s = new PopulationRateMonitor( stimgroup, string(strbuf), 0.001 );

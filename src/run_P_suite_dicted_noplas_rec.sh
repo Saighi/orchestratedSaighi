@@ -2,23 +2,23 @@
 {
 	. ./globalvars.sh
 
-	TIME=21800
+	TIME=76000
 	SIZE=4096
 	SIZE_EXT=1024
-	NB_SEGMENT=10
+	NB_SEGMENT=20
 	NB_PATTERN=1
 	PATTERNSIZE=0.1
-	PATTERNFREQUENCY=4
+	PATTERNFREQUENCY=6
 	SPARSITYPATTERN=1
 	REFPAT=0.05
 
 	#_dicted_pat_6h
-	OUTDIR="/mnt/data1/data_paul/sim_less_stim_neurons_nocons_corrected_pat_noplas_rec"
-	LOADDIR="/mnt/data1/data_paul/sim_noplas_rec"
+	OUTDIR="/mnt/data1/data_paul/sim_less_stim_neurons_nocons_corrected_pat_noplas_rec_fourier_0.1_20h_more_pres"
+	LOADDIR="/mnt/data1/data_paul/sim_fourrier_frec_noplas_rec"
 	SPIKETRAINS_FILE="spiketrains"
 	mkdir -p $OUTDIR
 
-	-inhomogeneous -maxrate 20 -minrate 0 -speedchange 5 -samplingvar 3
+	#-inhomogeneous -maxrate 10 -minrate 0 -speedchange 5 -samplingvar 3
 	python generate_spiketrains_final.py -rate 10  -timesim $TIME -nbneurons $SIZE_EXT \
 	 -nbsegment $NB_SEGMENT -outdir $OUTDIR -pattern -nbpattern $NB_PATTERN -patternsize $PATTERNSIZE \
 	 -patternfrequency $PATTERNFREQUENCY -sparsitypattern $SPARSITYPATTERN -refpattern $REFPAT

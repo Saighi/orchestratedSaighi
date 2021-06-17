@@ -31,9 +31,11 @@ void P10Connection::init(AurynFloat eta, AurynFloat kappa, AurynFloat maxweight)
 	tau_minus = 20e-3;
 
 	tau_long  = 100e-3;
-
+	tau_growth = 0.25;
+	growth_delta = 0.02*1e-3;
 	tau_consolidation = 1200;
 	timestep_consolidation = 1e-3*tau_consolidation/auryn_timestep;
+	timestep_growth = tau_growth/auryn_timestep;
 	delta_consolidation = 1.0*timestep_consolidation/tau_consolidation*auryn_timestep;;
 	logger->parameter("timestep_consolidation",(int)timestep_consolidation);
 
@@ -69,6 +71,7 @@ void P10Connection::init(AurynFloat eta, AurynFloat kappa, AurynFloat maxweight)
 
 	stdp_active = true;
 	consolidation_active = true;
+	constant_growth = false;
 
 
 	// cases where dst->evolve_locally() == true will be registered in SparseConnection
@@ -178,8 +181,13 @@ inline AurynWeight P10Connection::dw_pre(const NeuronID post, const AurynWeight 
 inline AurynWeight P10Connection::dw_post(const NeuronID pre, const NeuronID post, const AurynWeight * w, const AurynWeight w0)
 {
 	AurynDouble p = tr_post->get(post);
-	// AurynDouble dw = A3_plus*p*tr_pre->get(pre)-beta_fudge*pow(p,3);
-	AurynDouble dw = A3_plus*tr_post2->get(post)*tr_pre->get(pre) -beta_fudge*pow(p,3)*(*w-w0);
+	AurynDouble dw;
+	if (consolidation_active) {
+		AurynDouble dw = A3_plus*tr_post2->get(post)*tr_pre->get(pre)-beta_fudge*pow(p,3)*(*w-w0);
+	}
+	else{
+		AurynDouble dw = A3_plus*tr_post2->get(post)*tr_pre->get(pre);
+	}
 	return dw;
 }
 
@@ -268,13 +276,15 @@ void P10Connection::evolve()
 			*solid += dw;
 		}
 	}
-
-	// if ( sys->get_clock()%timestep_growth == 0 ) {
-	// 	for (AurynLong i = 0 ; i < w_solid_matrix->get_nonzero() ; ++i ) {
-	// 		AurynWeight * fragile = w->get_data_begin()+i;
-	// 		*fragile += delta;
+	// if (constant_growth){
+	// 	if ( sys->get_clock()%timestep_growth == 0 ) {
+	// 		for (AurynLong i = 0 ; i < w_solid_matrix->get_nonzero() ; ++i ) {
+	// 			AurynWeight * fragile = w->get_data_begin()+i;
+	// 			*fragile += growth_delta;
+	// 		}
 	// 	}
 	// }
+
 }
 
 void P10Connection::consolidate() {

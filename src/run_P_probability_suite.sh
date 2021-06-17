@@ -17,11 +17,12 @@
 	SAMPLINGRATE=10
 	MEMBRANTIME=0.001
 
-	OUTDIR="/mnt/data1/data_paul/sim_probability_pat_10Hz_oscillation40HZ_0.001jit"
+	OUTDIR="/mnt/data1/data_paul/sim_probability_pat_10Hz_0.001jit"
 	LOADDIR="/mnt/data1/data_paul/sim_10Hz_nopattern_morcoext"
 	SPIKETRAINS_FILE="spiketrains"
 	mkdir -p $OUTDIR
-	python generate_spiketrains_probability_use.py -membrantime $MEMBRANTIME -oscillation -varrate $VARRATE -frequency $FREQUENCY -samplingrate $SAMPLINGRATE -rate $RATE -timesim $TIME -samplingrate 10 -nbneurons $SIZE_EXT -nbsegment $NB_SEGMENT -outdir $OUTDIR -pattern -timepattern $PATTERNSIZE -nbpattern $NB_PATTERN -sparsitypattern $SPARSITYPATTERN -patternfrequency $PATTERNFREQUENCY -refpattern $REFPAT
+	#python generate_spiketrains_probability_use.py -membrantime $MEMBRANTIME -oscillation -varrate $VARRATE -frequency $FREQUENCY -samplingrate $SAMPLINGRATE -rate $RATE -timesim $TIME -samplingrate 10 -nbneurons $SIZE_EXT -nbsegment $NB_SEGMENT -outdir $OUTDIR -pattern -timepattern $PATTERNSIZE -nbpattern $NB_PATTERN -sparsitypattern $SPARSITYPATTERN -patternfrequency $PATTERNFREQUENCY -refpattern $REFPAT
+	python generate_spiketrains_probability_use.py -membrantime $MEMBRANTIME -rate $RATE -timesim $TIME -samplingrate 10 -nbneurons $SIZE_EXT -nbsegment $NB_SEGMENT -outdir $OUTDIR -pattern -timepattern $PATTERNSIZE -nbpattern $NB_PATTERN -sparsitypattern $SPARSITYPATTERN -patternfrequency $PATTERNFREQUENCY -refpattern $REFPAT
 
 	#python generate_spiketrains_probability_use2.py -membrantime $MEMBRANTIME -oscillation -varrate $VARRATE -frequency $FREQUENCY -samplingrate $SAMPLINGRATE -rate $RATE -timesim $TIME -samplingrate 10 -nbneurons $SIZE_EXT -nbsegment $NB_SEGMENT -outdir $OUTDIR -pattern -timepattern $PATTERNSIZE -nbpattern $NB_PATTERN -sparsitypattern $SPARSITYPATTERN -patternfrequency $PATTERNFREQUENCY -refpattern $REFPAT
 

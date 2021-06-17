@@ -126,6 +126,9 @@ public:
 
 	bool stdp_active;
 	bool consolidation_active;
+	bool constant_growth;
+	AurynFloat growth_delta;
+	AurynFloat tau_growth;
 
 	P10Connection(SpikingGroup * source, NeuronGroup * destination, TransmitterType transmitter=GLUT);
 

@@ -62,8 +62,14 @@ parser.add_argument('-patternsize',type=float,required=False)
 parser.add_argument('-patternfrequency',type=int,required=False)
 parser.add_argument('-sparsitypattern',type=float,required=False)
 parser.add_argument('-refpattern',type=float,required=False)
+parser.add_argument('-starttime',type=float,required=False)
 # Si il y a un pattern
 args = parser.parse_args()
+
+if args.starttime != None:
+    start_time= args.starttime
+else :
+    start_time = 0
 
 inhomogeneous = args.inhomogeneous
 mean_rate = args.rate
@@ -93,6 +99,7 @@ if pattern :
     concerned_neurons = set( np.random.choice(range(nb_neurons),int(nb_neurons*sparsity_pattern), replace = False))
     not_concerned_neurons = not_concerned_neurons.difference(concerned_neurons)
     all_pattern_times = np.empty((int(time_sim*pattern_frequency*5),2))
+    generated_pattern_times = homogeneous_poisson_process(pattern_frequency*pq.Hz,t_start=start_time*pq.s,t_stop =time_sim*pq.s,refractory_period = (pattern_size+ref_pattern)*pq.s, as_array=True )
     actual_nb_pattern = 0
 
 # print("inhomogeneous: "+str(inhomogeneous))
@@ -137,7 +144,7 @@ for s in range(nb_segment):
 
     if pattern:
 
-        pattern_times = homogeneous_poisson_process(pattern_frequency*pq.Hz,t_start=start,t_stop =time_seg*(s+1),refractory_period = (pattern_size+ref_pattern)*pq.s, as_array=True )
+        pattern_times = generated_pattern_times[np.where((generated_pattern_times>start)&(generated_pattern_times<time_seg*(s+1)))]
         choices_patterns = np.random.randint(0,nb_pattern,len(pattern_times))
 
         all_pattern_times[actual_nb_pattern:actual_nb_pattern+len(pattern_times),0]=pattern_times

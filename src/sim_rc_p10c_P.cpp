@@ -160,7 +160,7 @@ int main(int ac, char* av[])
             ("preferred", po::value<int>(), "num of preferred stim")
             ("patternFile", po::value<int>(), "repeated pattern")
             ("monfile", po::value<string>(), "monitor file")
-			      ("nb_pattern", po::value<int>(), "number of different patterns presented")
+			("nb_pattern", po::value<int>(), "number of different patterns presented")
             ("input_spiketrains", po::value<string>(), "input spiketrains")
 
         ;

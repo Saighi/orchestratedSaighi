@@ -20,7 +20,9 @@ import plotly.graph_objects as go
 
 # %%
 num_mpi_ranks = 4 # the number of sims you used in parallel
-datadir = os.path.expanduser("/mnt/data1/data_paul/sim_shift_nopattern") # Set this to your data path
+#datadir = os.path.expanduser("/mnt/data1/data_paul/sim_less_stim_neurons_nocons_corrected_pat_noplas_rec") # Set this to your data path
+datadir = os.path.expanduser("/mnt/data1/data_paul/sim_fourrier_frec_noplas_rec_more_wee_more_wse") # Set this to your data path
+
 prefix = "rf1"
 
 #%%
@@ -44,9 +46,10 @@ wext = np.sum( [ mmread(wf) for wf in wmatfilesext ] )
 wmatfilesie  = ["%s/rf1.%i.ie.wmat"%(datadir,i) for i in range(num_mpi_ranks)]
 wie = np.sum( [ mmread(wf) for wf in wmatfilesie ] )
 # %%
-see  = np.concatenate([pd.read_csv("%s/%s.%i.see"%(datadir,prefix,i),delimiter=' ' ).values[:,1:-1] for i in range(3)],axis=1)
-sie  = np.concatenate([pd.read_csv("%s/%s.%i.sie"%(datadir,prefix,i),delimiter=' ' ).values[:,1:-1] for i in range(3)],axis=1)
-sse  = np.concatenate([pd.read_csv("%s/%s.%i.sse"%(datadir,prefix,i),delimiter=' ' ).values[:,1:-1] for i in range(3)],axis=1)
+see  = np.concatenate([pd.read_csv("%s/%s.%i.see"%(datadir,prefix,i),delimiter=' ',comment='#' ).values[:,1:-1] for i in range(3)],axis=1)
+sie  = np.concatenate([pd.read_csv("%s/%s.%i.sie"%(datadir,prefix,i),delimiter=' ',comment='#' ).values[:,1:-1] for i in range(3)],axis=1)
+sse  = np.concatenate([pd.read_csv("%s/%s.%i.sse"%(datadir,prefix,i),delimiter=' ',comment='#' ).values[:,1:-1] for i in range(3)],axis=1)
+
 # %%
 # datadi_suite = os.path.expanduser("/mnt/data2/paul_data/Auryn_archives/sim_stady_state_wii0.08_wie0.08_wei0.72_suite")
 # # %%
@@ -56,17 +59,44 @@ sse  = np.concatenate([pd.read_csv("%s/%s.%i.sse"%(datadir,prefix,i),delimiter='
 # # %%
 # spkfiles_suite  = ["%s/%s.%i.e.spk"%(datadi_suite,prefix,i) for i in range(num_mpi_ranks)]
 # sfo_suite = AurynBinarySpikeView(spkfiles_suite)
+
 # %%
+win = signal.windows.hann(1000)
+plt.plot(time_axis,(np.convolve(rateE,win,'same')/ sum(win)),label = "Auryn",alpha = 0.75)
+plt.xlabel("time(s)")
+plt.ylabel("rate")
+
+plt.legend()
+#%%
 win = signal.windows.hann(10)
-plt.plot(time_axis,np.convolve(rateE,win,'same')/ sum(win),label = "Auryn",alpha = 0.75)
+fig = go.Figure(data=go.Scatter(x=time_axis, y=(np.convolve(rateE,win,'same')/ sum(win))))
+fig.show()
+#%%
+last_100 = rateE[-100000:]
+n_sample = 10
+size = int(len(last_100)/n_sample)
+fourrier = []
+for i in range(0,n_sample):
+    last = last_100[size*i:size*(i+1)]
+    fourrier.append(np.fft.rfft(last-np.mean(last)))
+
+fourier = np.array(fourrier)
+#fourier = np.fft.fft(rateE[-100000:]-np.mean(rateE[-100000:]))
+
+fourier_freq = np.fft.rfftfreq(size,0.001)
+#plt.plot(fourier_freq,np.abs(fourier)**2)
+fig = go.Figure(data=go.Scatter(x=fourier_freq, y=np.mean(np.abs(fourier)**2 ,axis=0)))
+fig.show()
+# %%
+win = signal.windows.hann(1000)
+plt.plot(time_axis,(np.convolve(rateI,win,'same')/ sum(win)),label = "Auryn",alpha = 0.75)
 plt.legend()
 # %%
 win = signal.windows.hann(10)
-plt.plot(time_axis_I,np.convolve(rateI,win,'same')/ sum(win),alpha = 0.75)
-#fig = go.Figure(data=go.Scatter( y=rateI[6000000:]))
+# plt.plot(time_axis_I,np.convolve(rateI,win,'same')/ sum(win),alpha = 0.75)
+fig = go.Figure(data=go.Scatter( y=(np.convolve(rateE,win,'same')/ sum(win)) ))
 #fig.add_trace(go.Scatter( y=excitatory["gampa"][0]))
-
-#fig.show()
+fig.show()
 # %%
 #plt.plot(time_axis_I[10000000:],np.convolve(rateI[10000000:],win,'same')/ sum(win),label = "Auryn")
 # %%
@@ -85,6 +115,8 @@ sns.despine()
 plt.plot(np.mean(sse,axis = 1))
 # %%
 plt.plot(np.mean(sie,axis = 1))
+plt.ylabel("mean weight sie")
+plt.xlabel("temps(10s)")
 # %%
 plt.plot(np.mean(see,axis = 1))
 # %%
@@ -98,7 +130,7 @@ see.shape
 # %%
 plt.hist(wext.data,bins=50,log=True);
 # %%
-plt.hist(w.data,bins=50,log=True);
+plt.hist(w.data,bins=50);
 # %%
 plt.hist(wie.data,bins=50,log=True);
 # %%
@@ -150,10 +182,10 @@ plt.plot(np.median(sie,axis = 1))
 
 
 # %%
-NE = 4096
-total_time = 21700
+NE = 4064
+total_time = 1200
 trange = 100
-numberof = 20
+numberof = 5
 for t in range(int(total_time/numberof),total_time,int(total_time/numberof)):
     times, cells = np.array(sfo.get_spikes(t_start=t,t_stop=t+(trange/numberof))).T
     freqs = []
@@ -163,8 +195,13 @@ for t in range(int(total_time/numberof),total_time,int(total_time/numberof)):
         isim = isi.mean()
         freqs.append(1/isim)
         cvs.append(isi.std()/isim)
-    plt.hist(freqs,bins=50)
+    plt.hist(freqs,bins=50,log=True)
+    plt.xlabel("taux de décharge(Hz)")
+    plt.ylabel("nombre d'unité")
     plt.show()
+#%%
+freqs= np.array(freqs)
+np.mean(freqs[freqs<4])
 # %%
 # trange = 100
 # for t in range(int(total_time/4),total_time,int(total_time/4)):
@@ -174,8 +211,8 @@ for t in range(int(total_time/numberof),total_time,int(total_time/numberof)):
 # plt.show()
 # %%
 NE = 4096
-time_start = 1400
-trange = 20
+time_start = 8400
+trange = 50
 times, cells = np.array(sfo.get_spikes(t_start=time_start,t_stop=time_start+trange)).T
 freqs = []
 cvs = []
@@ -221,4 +258,16 @@ np.mean(wext[:, np.where(np.array(freqs)<12)[0]].data)
 
 # %%
 wext[:, np.where(np.array(freqs)<12)[0]]
+# %%
+wmatfiles  = ["%s/rf1.%i.ee.wmat"%(datadir,i) for i in range(num_mpi_ranks)]
+w = np.sum( [ mmread(wf) for wf in wmatfiles ] )
+# %%
+len(w.data)
+# %%
+wSEmatfiles  = ["%s/rf1.%i.ext.wmat"%(datadir,i) for i in range(num_mpi_ranks)]
+wSE = np.sum( [ mmread(wf) for wf in wSEmatfiles ] )
+# %%
+len(wSE.data)
+# %%
+plt.hist(wSE.data,log=True,bins = 50)
 # %%

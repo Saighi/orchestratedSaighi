@@ -2,14 +2,14 @@
 {
 	. ./globalvars.sh
 
-	TIME=1000
+	TIME=1500
 	SIZE=4096
 	SIZE_EXT=1026
-	NB_SEGMENT=2
-	RATE=15
+	NB_SEGMENT=1
+	RATE=10
 
 
-	OUTDIR="/mnt/data1/data_paul/sim_nocons_less_stim_15Hz"
+	OUTDIR="/mnt/data1/data_paul/sim_test"
 	SPIKETRAINS_FILE="spiketrains"
 	mkdir -p $OUTDIR
 

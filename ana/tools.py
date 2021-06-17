@@ -2,6 +2,7 @@ import numpy as np
 from neo.core import SpikeTrain
 from quantities import s
 import numba
+from multiprocessing import Pool
 
 
 def inPatternOld(my_ras, dure_simu, duree_pattern, delay, multWindow=1,
@@ -115,7 +116,7 @@ def SpikesDistFromPat(spikeTrain, duree_pattern, signal_times, window=0.5,offset
     return times, dists
 
 @numba.jit(nopython=True)
-def SpikesDistNeurones(spikeTrainN, listsizesN, signal_times, window=0.5,offset=0, nb_neuron = 4096):
+def SpikesDistNeurons(spikeTrainN, listsizesN, signal_times, window=0.5,offset=0, nb_neuron = 4096):
     
     spikeTrain = spikeTrainN[:,0]
     neurones = spikeTrainN[:,1]
@@ -123,7 +124,6 @@ def SpikesDistNeurones(spikeTrainN, listsizesN, signal_times, window=0.5,offset=
     #listdistN = [[] for _ in range(nb_neuron)] 
     listdistN = np.empty((nb_neuron,10000,2))
 
-    
     r = 0
 
     for event in signal_times:
@@ -141,14 +141,36 @@ def SpikesDistNeurones(spikeTrainN, listsizesN, signal_times, window=0.5,offset=
 
     return listdistN,listsizesN
 
+
+# def in_pattern(spikeTrain, duree_pattern, signal_times):
+#     in_pat= np.zeros(len(spikeTrain))
+
+
+#     r = 0
+#     for i in range(len(spikeTrain)):
+#         time = spikeTrain[i][0]
+#         distance_event2 = signal_times[1+r]-time
+
+#         if distance_event2 < 0 and r < len(signal_times)-2:
+#             while signal_times[1+r]-time < 0:
+#                 r += 1
+#                 if r > len(signal_times)-2:
+#                     break
+
+#         distance_event1 = time-signal_times[0+r]
+
+#         if distance_event1 < duree_pattern and distance_event1>0:
+#             in_pat[i] = 1
+
+#     return in_pat
+
 @numba.jit(nopython=True)
-def in_pattern_proportion(spikeTrain,duree_pattern,signal_times):
+def in_pattern_proportion(spikeTrain, duree_pattern, signal_times):
 
-    in_pat= np.zeros(len(spikeTrain))
-
-
+    in_pat_number = 0
     r = 0
     for i in range(len(spikeTrain)):
+        
         time = spikeTrain[i][0]
         distance_event2 = signal_times[1+r]-time
 
@@ -161,18 +183,27 @@ def in_pattern_proportion(spikeTrain,duree_pattern,signal_times):
         distance_event1 = time-signal_times[0+r]
 
         if distance_event1 < duree_pattern and distance_event1>0:
-            in_pat[i] = 1
+            in_pat_number += 1
 
-    return in_pat
+    return in_pat_number/len(spikeTrain)
 
 
-def in_pattern(spikeTrain, duree_pattern, signal_times):
-    in_pat= np.zeros(len(spikeTrain))
-
+@numba.jit(nopython=True)
+def in_pattern_proportion_neurons(spikeTrain, duree_pattern, signal_times,nb_neuron):
+    
+    # spikeTrain = spikeTrainN[:,0]
+    # neurones = spikeTrainN[:,1]
+    
+    #listdistN = [[] for _ in range(nb_neuron)] 
+    in_pat_neurons = np.zeros(nb_neuron)
+    total_neurons =  np.zeros(nb_neuron)
 
     r = 0
     for i in range(len(spikeTrain)):
-        time = spikeTrain[i][0]
+        
+        time = spikeTrain[i,0]
+        neuron = int(spikeTrain[i,1])
+        total_neurons[neuron] += 1
         distance_event2 = signal_times[1+r]-time
 
         if distance_event2 < 0 and r < len(signal_times)-2:
@@ -184,7 +215,79 @@ def in_pattern(spikeTrain, duree_pattern, signal_times):
         distance_event1 = time-signal_times[0+r]
 
         if distance_event1 < duree_pattern and distance_event1>0:
-            in_pat[i] = 1
+            in_pat_neurons[neuron] += 1
 
-    return in_pat
+    return in_pat_neurons/total_neurons
 
+@numba.jit(nopython=True)
+def in_events_nbspike_neurons(spikeTrain, start_event_times,end_event_times,nb_neuron):
+    
+    in_pat_neurons = np.zeros((len(start_event_times),nb_neuron))
+
+    r = 0
+    for i in range(len(spikeTrain)):
+        
+        time = spikeTrain[i,0]
+        neuron = int(spikeTrain[i,1])
+        distance_event2 = start_event_times[1+r]-time
+
+        if distance_event2 < 0 and r < len(start_event_times)-2:
+            while start_event_times[1+r]-time < 0:
+                r += 1
+                if r > len(start_event_times)-2:
+                    break
+
+        distance_event1 = time-start_event_times[r]
+
+        if distance_event1 < end_event_times[r] and distance_event1>0:
+            in_pat_neurons[r][neuron] += 1
+
+    return in_pat_neurons
+
+def psth_data(spikes,wch_pat,nb_neurons,time_range,signals_times,size_window,duree_pattern):
+    spikes_p= spikes
+    dis_p,tailles_p = SpikesDistNeurons(spikes_p,np.zeros((nb_neurons,),dtype=np.int),np.array(signals_times[wch_pat]),window = size_window,offset=duree_pattern/2,nb_neuron=nb_neurons)
+
+    all_dis_p = []
+    for d in range(len(dis_p)):
+        all_dis_p.append(dis_p[d,:tailles_p[d]])
+    
+    data_p=all_dis_p
+    dist_p = []
+    tms_p = []
+    for i_p in  data_p:
+        for j_p in i_p:    
+            dist_p.append(j_p[0])
+            tms_p.append(j_p[1])
+    
+    return data_p,spikes_p,dist_p,tms_p
+
+
+def parallelize(procces_number,number_iter,time_range,nb_signal,size_window,sfo,dure_simu,signals_times,nb_neurons,duree_pattern,starting_time = 0):
+    spikes_in_time = dict()
+    dist_in_time = dict()
+    times_in_time = dict()
+    data_in_time = dict()
+    dure_simu = dure_simu-starting_time
+
+    for wch_pat in range(nb_signal):
+        spikes_in_time[wch_pat] = dict()
+        dist_in_time[wch_pat] = dict()
+        times_in_time[wch_pat] = dict()
+        data_in_time[wch_pat] = dict()
+        times = []
+        tms = [T for T in range(starting_time+int(dure_simu/number_iter)-time_range,starting_time+dure_simu,int(dure_simu/number_iter))]
+        print("extracting_spikes...") 
+        all_spikes = []
+        for T in tms:
+            all_spikes.append(np.array(sfo.get_spikes(t_start=T,t_stop=T+time_range)) )
+
+        print("computing...")
+        with Pool(processes=procces_number) as pool:
+            multiple_thread = [pool.apply_async(psth_data,(spikes,wch_pat,nb_neurons,time_range,signals_times,size_window,duree_pattern)) for spikes in all_spikes]
+            for letem in range(len(tms)):
+
+                data_in_time[wch_pat][tms[letem]],spikes_in_time[wch_pat][tms[letem]],dist_in_time[wch_pat][tms[letem]],times_in_time[wch_pat][tms[letem]]=multiple_thread[letem].get()
+        
+        times=list(data_in_time[wch_pat].keys())
+    return spikes_in_time,dist_in_time,times_in_time,data_in_time,times
