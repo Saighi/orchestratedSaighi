@@ -17,11 +17,12 @@ from scipy import signal
 from scipy.io import mmread
 import seaborn as sns
 import plotly.graph_objects as go
-
+import matplotlib
+matplotlib.rcParams.update({'font.size': 22})
 # %%
 num_mpi_ranks = 4 # the number of sims you used in parallel
 #datadir = os.path.expanduser("/mnt/data1/data_paul/sim_less_stim_neurons_nocons_corrected_pat_noplas_rec") # Set this to your data path
-datadir = os.path.expanduser("/mnt/data1/data_paul/sim_fourrier_frec_noplas_rec_more_wee_more_wse") # Set this to your data path
+datadir = os.path.expanduser("/mnt/data1/data_paul/sim_pat_oscillating_0.1_2") # Set this to your data path
 
 prefix = "rf1"
 
@@ -59,21 +60,25 @@ sse  = np.concatenate([pd.read_csv("%s/%s.%i.sse"%(datadir,prefix,i),delimiter='
 # # %%
 # spkfiles_suite  = ["%s/%s.%i.e.spk"%(datadi_suite,prefix,i) for i in range(num_mpi_ranks)]
 # sfo_suite = AurynBinarySpikeView(spkfiles_suite)
-
+#%%
+plt.rc('font', size=16)
 # %%
 win = signal.windows.hann(1000)
-plt.plot(time_axis,(np.convolve(rateE,win,'same')/ sum(win)),label = "Auryn",alpha = 0.75)
+plt.plot(time_axis[1000:],(np.convolve(rateE[1000:],win,'same')/ sum(win)),label = "Auryn",alpha = 0.75)
 plt.xlabel("time(s)")
 plt.ylabel("rate")
 
 plt.legend()
 #%%
+win = signal.windows.hann(1000)
+plt.plot(np.convolve(rateE,win,'same')/ sum(win))
+#%%
 win = signal.windows.hann(10)
-fig = go.Figure(data=go.Scatter(x=time_axis, y=(np.convolve(rateE,win,'same')/ sum(win))))
+fig = go.Figure(data=go.Scatter( y=(np.convolve(rateE[-5000:],win,'same')/ sum(win))))
 fig.show()
 #%%
-last_100 = rateE[-100000:]
-n_sample = 10
+last_100 = rateE[-1000000:]
+n_sample = 100
 size = int(len(last_100)/n_sample)
 fourrier = []
 for i in range(0,n_sample):
@@ -91,6 +96,9 @@ fig.show()
 win = signal.windows.hann(1000)
 plt.plot(time_axis,(np.convolve(rateI,win,'same')/ sum(win)),label = "Auryn",alpha = 0.75)
 plt.legend()
+#%%
+data = np.array([fourier_freq,np.mean(np.abs(fourier)**2 ,axis=0)]).T
+sns.lineplot(data=data)
 # %%
 win = signal.windows.hann(10)
 # plt.plot(time_axis_I,np.convolve(rateI,win,'same')/ sum(win),alpha = 0.75)
@@ -101,22 +109,49 @@ fig.show()
 #plt.plot(time_axis_I[10000000:],np.convolve(rateI[10000000:],win,'same')/ sum(win),label = "Auryn")
 # %%
 plt.hist(w.data, bins=100, log=True,label="Auryn")
-plt.title("EE weight distribution")
+plt.xlabel("Exc->Exc weight distribution")
+plt.ylabel("count")
 sns.despine()
 # %%
 plt.hist(wext.data, bins=100, log=True,label="Auryn")
-plt.title("Ext->E weight distribution")
+plt.xlabel("Stim->Exc weight distribution")
+plt.ylabel("count")
 sns.despine()
 # %%
 plt.hist(wie.data, bins=100, log=True,label="Auryn")
-plt.title("I->E weight distribution")
+plt.xlabel("Inh->Exc weight distribution")
+plt.ylabel("count")
 sns.despine()
+
 # %%
-plt.plot(np.mean(sse,axis = 1))
+fig, axs = plt.subplots(1,3)
+fig.set_size_inches(20, 4)
+mean = np.mean(sse,axis = 1)
+std = np.std(sse,axis = 1)
+axs[0].plot(np.mean(sse,axis = 1))
+axs[0].fill_between(np.linspace(0,len(mean),len(mean)),mean-std,mean+std,alpha=0.5,color ="red")
+#plt.xlabel("time(10s)")
+axs[0].set_ylabel("mean weight Exc -> Exc")
+
+mean = np.mean(sie,axis = 1)
+std = np.std(sie,axis = 1)
+axs[1].plot(np.mean(sie,axis = 1))
+axs[1].fill_between(np.linspace(0,len(mean),len(mean)),mean-std,mean+std,alpha=0.5,color ="red")
+#plt.xlabel("time(10s)")
+axs[1].set_ylabel("mean weight inh -> Exc")
+
+
+mean = np.mean(sse,axis = 1)
+std = np.std(sse,axis = 1)
+axs[2].plot(np.mean(sse,axis = 1))
+axs[2].fill_between(np.linspace(0,len(mean),len(mean)),mean-std,mean+std,alpha=0.5,color ="red")
+#axs[2].xlabel("time(10s)")
+axs[2].set_ylabel("mean weight stim -> Exc")
 # %%
 plt.plot(np.mean(sie,axis = 1))
-plt.ylabel("mean weight sie")
+plt.ylabel("mean weight inh -> Exc")
 plt.xlabel("temps(10s)")
+# %%
 # %%
 plt.plot(np.mean(see,axis = 1))
 # %%
@@ -130,7 +165,7 @@ see.shape
 # %%
 plt.hist(wext.data,bins=50,log=True);
 # %%
-plt.hist(w.data,bins=50);
+plt.hist(w.data,bins=50,log=True);
 # %%
 plt.hist(wie.data,bins=50,log=True);
 # %%
@@ -147,6 +182,7 @@ total_time =1
 plt.hist(see[total_time,1:-1],bins=50)
 
 #%%
+sns.set(rc={'figure.figsize':(11.7,8.27)})
 fig,ax = plt.subplots()
 for t in range(int(see.shape[0]/4),see.shape[0],int(see.shape[0]/4)):
     values = np.log(see[t,1:-1][np.where(see[t,1:-1]!=0)[0]])
@@ -179,9 +215,20 @@ plt.plot(np.mean(sie_suite,axis = 1))
 plt.plot(np.mean(see,axis = 1))
 # %%
 plt.plot(np.median(sie,axis = 1))
-
-
+#%%
+sns.set_theme()
+sns.set(rc={'figure.figsize':(15,3.5)})
+fig, axis  = plt.subplots(1,3,sharey=True)
+axis[0].hist(see[0,:],range=(0,0.53),bins=50,log=True,alpha=1);
+axis[0].set_ylabel("count")
+axis[0].set_xlabel("0s")
+axis[1].hist(see[1000,:],range=(0,0.53),bins=50,log=True);
+axis[1].set_xlabel("10 000s")
+axis[2].hist(see[2000,:],range=(0,0.53),bins=50,log=True);
+axis[2].set_xlabel("30 000s")
+fig.text(0.5, 0.04, '$Exc -> Exc$', ha='center')
 # %%
+sns.set_theme()
 NE = 4064
 total_time = 1200
 trange = 100
@@ -196,8 +243,8 @@ for t in range(int(total_time/numberof),total_time,int(total_time/numberof)):
         freqs.append(1/isim)
         cvs.append(isi.std()/isim)
     plt.hist(freqs,bins=50,log=True)
-    plt.xlabel("taux de décharge(Hz)")
-    plt.ylabel("nombre d'unité")
+    plt.xlabel("discharge rate(Hz)")
+    plt.ylabel("count")
     plt.show()
 #%%
 freqs= np.array(freqs)

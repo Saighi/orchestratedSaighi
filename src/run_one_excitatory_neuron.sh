@@ -1,7 +1,7 @@
 #!/bin/sh
 . ./globalvars.sh
 
-TIME=100
+TIME=5
 
 OUTDIR="$HOME/data/sim_network/sim_one_excitatory_neuron_many_input"
 

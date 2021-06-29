@@ -72,6 +72,8 @@ void P10Connection::init(AurynFloat eta, AurynFloat kappa, AurynFloat maxweight)
 	stdp_active = true;
 	consolidation_active = true;
 	constant_growth = false;
+	no_triplet = false;
+	no_hetero = false;
 
 
 	// cases where dst->evolve_locally() == true will be registered in SparseConnection
@@ -174,18 +176,31 @@ P10Connection::~P10Connection()
 
 inline AurynWeight P10Connection::dw_pre(const NeuronID post, const AurynWeight * w)
 {
+
+	// if (no_hetero){
+	// 	dw = A2_minus*(tr_post->get(post));
+	// }else{
 	AurynDouble dw = A2_minus*(tr_post->get(post))-delta;
+	// }
+	
 	return dw;
 }
 
 inline AurynWeight P10Connection::dw_post(const NeuronID pre, const NeuronID post, const AurynWeight * w, const AurynWeight w0)
 {
 	AurynDouble p = tr_post->get(post);
-	AurynDouble dw;
+	AurynDouble dw ;
+	// if (consolidation_active) {
+	// 	dw = A3_plus*tr_post2->get(post)*tr_pre->get(pre)-beta_fudge*pow(p,3)*(*w-w0);
+	// }
+	// else if (no_triplet) {
+	// 	dw = A3_plus*tr_pre->get(pre);
+	// }else {
+	//AurynDouble dw = A3_plus*tr_post2->get(post)*tr_pre->get(pre);
+	// }
 	if (consolidation_active) {
 		AurynDouble dw = A3_plus*tr_post2->get(post)*tr_pre->get(pre)-beta_fudge*pow(p,3)*(*w-w0);
-	}
-	else{
+	}else{
 		AurynDouble dw = A3_plus*tr_post2->get(post)*tr_pre->get(pre);
 	}
 	return dw;

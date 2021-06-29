@@ -127,6 +127,8 @@ public:
 	bool stdp_active;
 	bool consolidation_active;
 	bool constant_growth;
+	bool no_triplet;
+	bool no_hetero;
 	AurynFloat growth_delta;
 	AurynFloat tau_growth;
 

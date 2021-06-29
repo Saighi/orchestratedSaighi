@@ -142,27 +142,27 @@ def SpikesDistNeurons(spikeTrainN, listsizesN, signal_times, window=0.5,offset=0
     return listdistN,listsizesN
 
 
-# def in_pattern(spikeTrain, duree_pattern, signal_times):
-#     in_pat= np.zeros(len(spikeTrain))
+def in_pattern(spikeTrain, duree_pattern, signal_times):
+    in_pat= np.zeros(len(spikeTrain))
 
 
-#     r = 0
-#     for i in range(len(spikeTrain)):
-#         time = spikeTrain[i][0]
-#         distance_event2 = signal_times[1+r]-time
+    r = 0
+    for i in range(len(spikeTrain)):
+        time = spikeTrain[i][0]
+        distance_event2 = signal_times[1+r]-time
 
-#         if distance_event2 < 0 and r < len(signal_times)-2:
-#             while signal_times[1+r]-time < 0:
-#                 r += 1
-#                 if r > len(signal_times)-2:
-#                     break
+        if distance_event2 < 0 and r < len(signal_times)-2:
+            while signal_times[1+r]-time < 0:
+                r += 1
+                if r > len(signal_times)-2:
+                    break
 
-#         distance_event1 = time-signal_times[0+r]
+        distance_event1 = time-signal_times[0+r]
 
-#         if distance_event1 < duree_pattern and distance_event1>0:
-#             in_pat[i] = 1
+        if distance_event1 < duree_pattern and distance_event1>0:
+            in_pat[i] = 1
 
-#     return in_pat
+    return in_pat
 
 @numba.jit(nopython=True)
 def in_pattern_proportion(spikeTrain, duree_pattern, signal_times):

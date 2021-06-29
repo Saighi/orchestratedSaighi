@@ -418,50 +418,50 @@ int main(int ac, char* av[])
 	neurons_i2->set_tau_nmda(100e-3);
 	neurons_i2->set_ampa_nmda_ratio(0.3);
 	sprintf(strbuf, "%s/%s", dir.c_str(),spiketrains.c_str());
-	FilesInputGroup *stimgroup = new FilesInputGroup(size,string(strbuf),nb_segment);
+	FilesInputGroup *stimgroup = new FilesInputGroup(size*2,string(strbuf),nb_segment);
 
 
 
 	double raw_delta = delta * eta / 1e-3;
 
 
-	// STPConnection * con_ee;
-	// con_ee = new STPConnection(neurons_e,neurons_e,wee,sparseness,GLUT);
-	// con_ee->set_tau_d(taud);
-	// con_ee->set_tau_f(0.6);
-	// con_ee->set_ujump(0.2);
-	// double wtmax = 1.0/4*(weight_c-weight_a);
-	// double normalization_factor = (wtmax-weight_a)*(wtmax-(weight_a+weight_c)/2)*(wtmax-weight_c);
-
-	P10Connection * con_ee;
-	con_ee = new P10Connection(neurons_e,neurons_e,
-			wee,sparseness,
-			eta,
-			kappa,
-			wmax
-			);
-
-	con_ee->set_transmitter(AMPA);
-	con_ee->set_name("EE");
-	con_ee->set_weight_a(weight_a);
-	con_ee->set_weight_c(weight_c);
-	con_ee->consolidation_active = consolidation;
+	STPConnection * con_ee;
+	con_ee = new STPConnection(neurons_e,neurons_e,wee,sparseness,GLUT);
+	con_ee->set_tau_d(taud);
+	con_ee->set_tau_f(0.6);
+	con_ee->set_ujump(0.2);
 	double wtmax = 1.0/4*(weight_c-weight_a);
 	double normalization_factor = (wtmax-weight_a)*(wtmax-(weight_a+weight_c)/2)*(wtmax-weight_c);
-	con_ee->pot_strength = pot_strength/normalization_factor;
-	logger->parameter("normalized pot_strength",con_ee->pot_strength);
-	if ( noisy_initial_weights )
-		con_ee->random_data(wee,wee);
-	if ( consolidate_initial_weights )
-		con_ee->consolidate();
-	// STP parameters
-	con_ee->set_tau_d(taud);
-	con_ee->set_tau_f(tauf);
-	con_ee->set_ujump(ujump);
-	con_ee->set_urest(ujump);
-	con_ee->set_beta(beta);
-	con_ee->delta = raw_delta*eta;
-	con_ee->set_min_weight(wmin);
+
+	// P10Connection * con_ee;
+	// con_ee = new P10Connection(neurons_e,neurons_e,
+	// 		wee,sparseness,
+	// 		eta,
+	// 		kappa,
+	// 		wmax
+	// 		);
+
+	// con_ee->set_transmitter(AMPA);
+	// con_ee->set_name("EE");
+	// con_ee->set_weight_a(weight_a);
+	// con_ee->set_weight_c(weight_c);
+	// con_ee->consolidation_active = consolidation;
+	// double wtmax = 1.0/4*(weight_c-weight_a);
+	// double normalization_factor = (wtmax-weight_a)*(wtmax-(weight_a+weight_c)/2)*(wtmax-weight_c);
+	// con_ee->pot_strength = pot_strength/normalization_factor;
+	// logger->parameter("normalized pot_strength",con_ee->pot_strength);
+	// if ( noisy_initial_weights )
+	// 	con_ee->random_data(wee,wee);
+	// if ( consolidate_initial_weights )
+	// 	con_ee->consolidate();
+	// // STP parameters
+	// con_ee->set_tau_d(taud);
+	// con_ee->set_tau_f(tauf);
+	// con_ee->set_ujump(ujump);
+	// con_ee->set_urest(ujump);
+	// con_ee->set_beta(beta);
+	// con_ee->delta = raw_delta*eta;
+	// con_ee->set_min_weight(wmin);
 	//con_ee->stdp_active = false;
 	// con_ee->constant_growth = true;
 
@@ -523,7 +523,15 @@ int main(int ac, char* av[])
 	con_stim_e->set_name("Stim->E");
 	con_stim_e->consolidation_active = consolidation;
 	con_stim_e->pot_strength = pot_strength/normalization_factor;
+	// con_stim_e->no_triplet = true;
+	// con_stim_e->no_hetero = true;
 	// con_stim_e->constant_growth = true;
+
+	float wsi = 0.2;
+	STPConnection * con_si2 = new STPConnection(stimgroup,neurons_i2,wsi,sparseness,GLUT);
+	con_si2->set_tau_d(taud);
+	con_si2->set_tau_f(0.6);
+	con_si2->set_ujump(0.2);
 
 	sprintf(strbuf, "%s/%s.%d.see", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
 	WeightMonitor * wmon = new WeightMonitor( con_ee, string(strbuf), 10.0);
