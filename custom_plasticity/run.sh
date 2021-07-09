@@ -3,21 +3,34 @@
 #--recfile $RECFILE
 #--monf ./data/rf1.pat \
 #--stim ./data/shapes.pat \
-. ./globalvars.sh
 
 
 OUTDIR="/mnt/data1/data_paul/custom_plas/sim_test"
 SIMTIME=10
 mkdir -p $OUTDIR
 RATE=4
-INIT_W
+WEXT=0.05
+WIXT=0.025
+WIE=1
+WEI=0.5
+WEE=1
+NB_STIM=16384
+NB_EXC=1024
 
 
-make -C $DIR -j8 sim_custom_plas && mpirun -n $NP $DIR/sim_custom_plas \
+make -C . -j8 sim_custom_plas && ./sim_custom_plas \
 	--simtime $SIMTIME \
-	--bgrate 4 \
-	--init_w $INIT_W \
-	--rate_one $RATE \
-	--rate_two $RATE
+	--dir $OUTDIR \
+	--nb_stim $NB_STIM \
+	--nb_exc $NB_EXC \
+	--wext $WEXT \
+	--wixt $WIXT \
+	--wie $WIE \
+	--wei $WEI \
+	--wee $WEE \
+	--sparseness_se 0.1 \
+	--sparseness_ie 0.05 \
+	--sparseness_ee 0.1 \
+	--rate_one $RATE 
 
 cp $0 $OUTDIR
