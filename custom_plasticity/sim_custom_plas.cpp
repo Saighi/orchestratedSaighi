@@ -21,6 +21,7 @@
 
 #include "auryn.h"
 #include "../src/GlobalPFConnection.h"
+#include "P10Connection.h"
 using namespace auryn;
 
 namespace po = boost::program_options;
@@ -32,11 +33,15 @@ int main(int ac, char* av[])
 {
 	bool save = false;
 	
-	AurynWeight wext = 0.1;
+	
 	AurynWeight wixt = 0.1;
 	AurynWeight wie = 0.1;
 	AurynWeight wei = 0.1;
+	AurynWeight wii = 0.1;
 	AurynWeight wee = 0.1;
+	AurynWeight sigma_ext;
+	AurynWeight gamma_ext;
+	AurynWeight wext=0.1;
 
 	float rate_one = 4;
 	float rate_two = 4;
@@ -48,11 +53,12 @@ int main(int ac, char* av[])
 	AurynFloat sparseness_se = 0.2;
 	AurynFloat sparseness_ie = 0.2;
 	AurynFloat sparseness_ee = 0.2;
+	AurynFloat sparseness_si = 0.2;
 	
 	AurynFloat eta = 1*10e-3;
 	AurynFloat kappa = 0;
 	AurynFloat tau_stdp = 20e-3;
-	AurynFloat alpha = 4;
+	AurynFloat alpha = 1;
 	AurynWeight maxweight = 5;
 	std::string dir = "";
 	std::string file_prefix = "rf1";
@@ -68,8 +74,12 @@ int main(int ac, char* av[])
 			("wie", po::value<double>(), "recurrent weight (i->e)")
 			("wei", po::value<double>(), "recurrent weight (e->i)")
 			("wee", po::value<double>(), "recurrent weight (e->e)")
+			("wii", po::value<double>(), "recurrent weight (i->i)")
+			("gamma_ext", po::value<double>(), "gamma of weight (e->ext)")
+			("sigma_ext", po::value<double>(), "sigma of weights (e->ext) distribution")
 			("sparseness_ie", po::value<double>(), "sparseness (i->e)")
 			("sparseness_ee", po::value<double>(), "sparseness (e->e)")
+			("sparseness_si", po::value<double>(), "sparseness (s->i)")
             ("simtime", po::value<double>(), "simulation time")
             ("rate_one", po::value<double>(), "background rate of input one")
 			("nb_stim", po::value<double>(), "number of neurons from stimulation")
@@ -97,11 +107,20 @@ int main(int ac, char* av[])
 		if (vm.count("wei")) {
 			wei = vm["wei"].as<double>();
         }
-		if (vm.count("wee")) {
-			wee = vm["wee"].as<double>();
+		if (vm.count("wii")) {
+			wii = vm["wii"].as<double>();
+        }
+		if (vm.count("gamma_ext")) {
+			gamma_ext = vm["gamma_ext"].as<double>();
+        }
+		if (vm.count("sigma_ext")) {
+			sigma_ext = vm["sigma_ext"].as<double>();
         }
 		if (vm.count("sparseness_se")) {
 			sparseness_se = vm["sparseness_se"].as<double>();
+        }
+		if (vm.count("sparseness_si")) {
+			sparseness_si = vm["sparseness_si"].as<double>();
         }
 		if (vm.count("sparseness_ie")) {
 			sparseness_ie = vm["sparseness_ie"].as<double>();
@@ -138,10 +157,11 @@ int main(int ac, char* av[])
 	sys->set_master_seed(42);
 	logger->set_logfile_loglevel(VERBOSE);
 
-	PoissonGroup * PG_1 = new PoissonGroup(nb_stim,rate_one);
+	sprintf(strbuf, "%s/%s", dir.c_str(),"spiketrains");
+	FilesInputGroup * PG_1 = new FilesInputGroup(nb_stim,string(strbuf),1);
 	//PoissonGroup * PG_2 = new PoissonGroup(1,rate_two);
 
-	AIFGroup * neurons_e = new AIFGroup(nb_exc);
+	AIF2Group * neurons_e = new AIF2Group(nb_exc);
 	neurons_e->dg_adapt1  = 0.1;
 	neurons_e->set_tau_gaba(10e-3);
 	neurons_e->set_tau_nmda(100e-3);
@@ -152,18 +172,48 @@ int main(int ac, char* av[])
 	neurons_e->set_tau_nmda(100e-3);
 	neurons_e->set_ampa_nmda_ratio(0.3);
 
-	SymmetricSTDPConnection * SEE = new SymmetricSTDPConnection(PG_1,neurons_e,wext,sparseness_se,eta,kappa,tau_stdp,maxweight,GLUT,string("STDPConnection"));
-	
+	// SymmetricSTDPConnection * SEE = new SymmetricSTDPConnection(PG_1,neurons_e,wext,sparseness_se,eta,kappa,tau_stdp,maxweight,GLUT,string("STDPConnection"));
+	// SEE->random_data_lognormal(gamma_ext, sigma_ext);
+
+	P10Connection * SEE;
+	SEE = new P10Connection(PG_1,neurons_e,
+			wext,sparseness_se,
+			eta,
+			kappa,
+			maxweight,
+			0 // delay
+			);
+
+	SEE->set_transmitter(AMPA);
+	SEE->set_name("SE");
+	// STP parameters
+	SEE->set_tau_d(0.15);
+	SEE->set_tau_f(0.6);
+	SEE->set_ujump(0.2);
+	SEE->set_urest(0.2);
+	SEE->random_data_lognormal(gamma_ext, sigma_ext);
+
+	// STPConnection * SEE = new STPConnection(PG_1,neurons_e,wext,sparseness_se,GLUT);
+	// SEE->set_tau_d(0.15);
+	// SEE->set_tau_f(0.6);
+	// SEE->set_ujump(0.2);
+	// SEE->random_data_lognormal(gamma_ext, sigma_ext);
+
 	GlobalPFConnection * SIE;
 	SIE = new GlobalPFConnection(neurons_i,neurons_e,
 			wie,sparseness_ie,
 			10.0,
-			eta/50,
+			eta/50, 
 			alpha,
-			50,
+			5,
 			GABA
 			);
 	SIE->set_name("IE");
+		
+	// STPConnection * SIE = new STPConnection(neurons_i,neurons_e,wie,sparseness_ie);
+	// SIE->set_tau_d(0.15);
+	// SIE->set_tau_f(0.6);
+	// SIE->set_ujump(0.2);
 
 	STPConnection * con_ei = new STPConnection(neurons_e,neurons_i,wei,sparseness_ie,GLUT);
 	con_ei->set_tau_d(0.15);
@@ -175,26 +225,22 @@ int main(int ac, char* av[])
 	con_ee->set_tau_f(0.6);
 	con_ee->set_ujump(0.2);
 
-	STPConnection * con_si = new STPConnection(PG_1,neurons_i,wixt,sparseness_se,GLUT);
+	STPConnection * con_si = new STPConnection(PG_1,neurons_i,wixt,sparseness_si,GLUT);
 	con_si->set_tau_d(0.15);
 	con_si->set_tau_f(0.6);
 	con_si->set_ujump(0.2);
+	con_si->random_data_lognormal(gamma_ext, sigma_ext);
 
-
-	STPConnection * con_ii = new STPConnection(neurons_i,neurons_i,wie,sparseness_ie,GLUT);
-	con_ii->set_tau_d(0.15);
-	con_ii->set_tau_f(0.6);
-	con_ii->set_ujump(0.2);
-
-
-
+	double geta = -eta*1e-4;
+	SparseConnection * con_ii = new SparseConnection(neurons_i,neurons_i,wii,sparseness_ie,GABA);
 
 	sprintf(strbuf, "%s/%s.%d.sse", dir.c_str(), file_prefix.c_str(),sys->mpi_rank());
-	WeightMonitor *wmon = new WeightMonitor(SEE,0,1, string(strbuf), 0.001,DATARANGE);
-
+	WeightMonitor *wmon = new WeightMonitor(SEE, string(strbuf), 0.01);
+	wmon->add_equally_spaced(1000);
 
 	sprintf(strbuf, "%s/%s.%d.sie", dir.c_str(), file_prefix.c_str(),sys->mpi_rank());
-	WeightMonitor *wmon_ie = new WeightMonitor(SIE,0,1, string(strbuf), 0.001,DATARANGE);
+	WeightMonitor *wmon_ie = new WeightMonitor(SIE, string(strbuf), 0.01);
+	wmon_ie->add_equally_spaced(1000);
 
 	sprintf(strbuf, "%s/%s.%d.e.prate", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
 	PopulationRateMonitor * pmon_e = new PopulationRateMonitor( neurons_e, string(strbuf), 0.001 );
@@ -202,6 +248,15 @@ int main(int ac, char* av[])
 	sprintf(strbuf, "%s/%s.%d.i.prate", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
 	PopulationRateMonitor * pmon_i = new PopulationRateMonitor( neurons_i, string(strbuf), 0.001 );
 
+	sprintf(strbuf, "%s/%s.%d.e.g_adapt2", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
+    StateMonitor *adaptMon = new StateMonitor(neurons_e, 0, "g_adapt2", string(strbuf), 0.0001);
+
+	sprintf(strbuf, "%s/%s.%d.e.spk", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
+	BinarySpikeMonitor * smon_e = new BinarySpikeMonitor( neurons_e, string(strbuf), nb_exc );
+
+
+	sprintf(strbuf, "%s/%s.%d.i2.spk", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
+	BinarySpikeMonitor * smon_i2 = new BinarySpikeMonitor( neurons_i, string(strbuf), nb_exc/4 );
 
 	//RateChecker * chk = new RateChecker( neurons_e , -1 , 20. , 0.1);
 

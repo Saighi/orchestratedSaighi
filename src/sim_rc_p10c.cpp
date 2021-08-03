@@ -648,7 +648,7 @@ int main(int ac, char* av[])
 
 	sprintf(strbuf, "%s/%s.%d.see", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
 	WeightMonitor * wmon = new WeightMonitor( con_ee, string(strbuf), 1.0);
-	wmon->add_equally_spaced(50);
+	wmon->add_equally_spaced(1000);
 
 	if ( !monfile.empty() )
 		wmon->load_pattern_connections(monfile,10,10,ASSEMBLIES_ONLY); // true for assemblies only
@@ -673,7 +673,7 @@ int main(int ac, char* av[])
 
 	sprintf(strbuf, "%s/%s.%d.si2e", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );
 	WeightMonitor * wmon_i2e = new WeightMonitor( con_i2e, string(strbuf) );
-	wmon_i2e->add_equally_spaced(50);
+	wmon_i2e->add_equally_spaced(1000);
 
 
 	// sprintf(strbuf, "%s/%s.%d.ipe", dir.c_str(), file_prefix.c_str(), sys->mpi_rank() );

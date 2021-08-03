@@ -11,7 +11,6 @@ import quantities as pq
 from elephant.spike_train_generation import homogeneous_poisson_process
 from elephant.statistics import instantaneous_rate
 from elephant.statistics import isi
-import plotly.graph_objects as go
 from neo.core import SpikeTrain
 from scipy import signal
 from scipy.io import mmread

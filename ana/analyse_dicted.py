@@ -15,7 +15,7 @@ from neo.core import SpikeTrain
 from scipy import signal
 from scipy.io import mmread
 import seaborn as sns
-import plotly.graph_objects as go
+
 
 # %%
 time_step =0.0001
